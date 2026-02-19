@@ -447,7 +447,7 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
             </div>
 
             <div className="grid gap-1.5">
-              <Label htmlFor="description" className="text-sm font-medium md:mt-2">Description</Label>
+              <Label htmlFor="description" className="text-sm font-medium md:mt-2">Description (Optional)</Label>
               <Textarea
                 id="description"
                 placeholder="Briefly describe the project (Optional)"
@@ -532,7 +532,7 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
             </div>
 
             <div className="grid gap-1.5">
-              <Label htmlFor="remarks" className="text-sm font-medium md:mt-2">Remarks</Label>
+              <Label htmlFor="remarks" className="text-sm font-medium md:mt-2">Remarks (Optional)</Label>
               <Textarea
                 id="remarks"
                 placeholder="Add any additional notes (Optional)"

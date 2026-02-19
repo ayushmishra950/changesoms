@@ -35,19 +35,27 @@ import CompaniesPage from "./job-portal/CompaniesPage";
 import JobsPage from "./job-portal/JobsPage";
 import RevenuePage from "./job-portal/RevenuePage";
 import SettingsPage from "./job-portal/SettingsPage";
-import { useState } from "react";
 
 // global.d.ts
-export {};
+export { };
 
 declare global {
   interface Window {
     reactRouterNavigate?: (path: string) => void;
   }
 }
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5,           // 5 minutes
+      refetchOnWindowFocus: false,        // window focus par refetch nahi
+      retry: 1,                            // optional: retry once if failed
+      // suspense: not allowed here
+      // cacheTime: not allowed globally
+    },
+  },
+});
 
-
-const queryClient = new QueryClient();
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { isAuthenticated } = useAuth();
@@ -57,7 +65,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 const AppRoutes = () => {
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
-   window.reactRouterNavigate = navigate;
+  window.reactRouterNavigate = navigate;
 
   return (
     <Routes>
@@ -92,21 +100,21 @@ const AppRoutes = () => {
         </Route>
 
 
-         {/* Job Portal Routes */}
+        {/* Job Portal Routes */}
         <Route path="/jobs" element={<JobLayout />}>
           <Route index element={<JobDashboard />} />
           <Route path="application" element={<ApplicationsPage />} />
-          <Route path="candidate" element={<CandidatesPage />} />
-          <Route path="company" element={<CompaniesPage />} />
-          <Route path="job" element={<JobsPage />} />
-          <Route path="revenue" element={<RevenuePage />} />
+          <Route path="candidates" element={<CandidatesPage />} />
+          <Route path="companys" element={<CompaniesPage />} />
+          <Route path="jobs" element={<JobsPage />} />
+          <Route path="revenues" element={<RevenuePage />} />
           <Route path="setting" element={<SettingsPage />} />
         </Route>
-      
+
       </Route>
 
 
-      
+
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
@@ -116,13 +124,13 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
       <NotificationProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <AppRoutes />
-        </BrowserRouter>
-      </TooltipProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <AppRoutes />
+          </BrowserRouter>
+        </TooltipProvider>
       </NotificationProvider>
     </AuthProvider>
   </QueryClientProvider>

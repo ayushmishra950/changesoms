@@ -13,6 +13,9 @@ import axios from 'axios';
 import { useAuth } from "@/contexts/AuthContext";
 import { Helmet } from "react-helmet-async";
 import { EmployeeFormDialog } from "@/Forms/EmployeeFormDialog"
+import { useAppDispatch, useAppSelector } from '@/redux-toolkit/hooks/hook';
+import { getDepartment } from '@/redux-toolkit/slice/allPage/departmentSlice';
+import { getEmployeeList } from '@/redux-toolkit/slice/allPage/userSlice';
 
 
 const departmentColors = [
@@ -35,8 +38,8 @@ const Departments: React.FC = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [selectedDepartmentId, setSelectedDepartmentId] = useState(null);
   const [showDepartment, setShowDepartment] = useState(false);
-  const [departmentList, setDepartmentList] = useState([]);
-  const [employeeList, setEmployeeList] = useState([]);
+  // const [departmentList, setDepartmentList] = useState([]);
+  // const [employeeList, setEmployeeList] = useState([]);
   const [departmentRefresh, setDepartmentRefresh] = useState(false);
   const [departmentName, setDepartmentName] = useState('');
   const [selectedDepartment, setSelectedDepartment] = useState<null | any>(null);
@@ -44,7 +47,11 @@ const Departments: React.FC = () => {
   const [employeeListRefresh, setEmployeeListRefresh] = useState(false);
   const [employeeDialogOpen, setEmployeeDialogOpen] = useState(false);
   const [selectedDepartmentName, setSelectedDepartmentName] = useState("");
-
+    const [pageLoading, setPageLoading] = useState(false);
+  
+  const dispatch = useAppDispatch();
+  const departmentList = useAppSelector((state) => state.department.departments);
+  const employeeList = useAppSelector((state) => state.user.employees);
   const filteredDepartments = departmentList.filter(
     (dept) =>
       dept.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -53,10 +60,12 @@ const Departments: React.FC = () => {
 
   const handleGetDepartment = async () => {
     try {
+      setPageLoading(true);
       const data = await getDepartments(user?.companyId?._id);
       console.log(data)
       if (Array.isArray(data)) {
-        setDepartmentList(data);
+        // setDepartmentList(data);
+        dispatch(getDepartment(data));
         setDepartmentRefresh(false);
       }
     } catch (err) {
@@ -66,14 +75,20 @@ const Departments: React.FC = () => {
         description: err?.response?.data?.message || "Something went wrong",
       });
     }
+    finally{
+      setPageLoading(false);
+    }
   };
 
 
   const handleGetEmployees = async () => {
     try {
+      setPageLoading(true);
       const data = await getEmployees(user?.companyId?._id);
       if (Array.isArray(data)) {
-        setEmployeeList(data);
+        // setEmployeeList(data);
+        dispatch(getEmployeeList(data));
+        setEmployeeListRefresh(false);
       }
     } catch (err) {
       console.log(err);
@@ -82,14 +97,20 @@ const Departments: React.FC = () => {
         description: err?.response?.data?.message || "Something went wrong",
       });
     }
+    finally{
+      setPageLoading(false);
+    }
   };
 
   useEffect(() => {
-    if (!departmentList?.length || departmentRefresh || employeeListRefresh) {
+    if (user?.role === "admin" && (departmentList.length === 0  || departmentRefresh)) {
       handleGetDepartment();
+    }
+
+    if(user?.role === "admin" && (employeeList.length === 0 || employeeListRefresh)){
       handleGetEmployees();
     }
-  }, [departmentRefresh, employeeListRefresh]);
+  }, [departmentRefresh, employeeListRefresh, departmentList.length, user?.companyId?._id]);
 
   const handleDeleteClick = (employeeId) => {
     console.log(employeeId)
@@ -122,6 +143,16 @@ const Departments: React.FC = () => {
       setIsDeleteDialogOpen(false);
     }
   };
+
+
+
+    if (pageLoading && (departmentList.length === 0 || employeeList.length === 0)) {
+  return (
+    <div className="flex items-center justify-center h-screen">
+      <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-primary"></div>
+    </div>
+  );
+}
 
   return (
     <>
@@ -298,10 +329,9 @@ const Departments: React.FC = () => {
         <DepartmentCard
         
           departmentData={selectedDepartment} // pura dept object
-          employees={selectedDepartmentEmployees} // us dept ke employees
+          employees={selectedDepartmentEmployees} 
           onClose={() => setShowDepartment(false)}
           departmentList={filteredDepartments}
-          setEmployeeList={setEmployeeList}
           setSelectedDepartmentEmployees={setSelectedDepartmentEmployees}
           refreshList={handleGetEmployees}
         />

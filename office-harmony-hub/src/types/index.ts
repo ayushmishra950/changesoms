@@ -169,7 +169,8 @@ export interface AttendanceItem {
 }
 
 export interface Props {
-  attendanceRefresh: number; // trigger refresh from parent
+  attendanceRefresh: boolean; // trigger refresh from parent
+  setAttendanceRefresh: (value: boolean) => void; // function to update refresh state
 }
 export const months = [
   "January", "February", "March", "April",
@@ -254,4 +255,180 @@ export interface Department {
   description: string;
   createdAt?: string;
   updatedAt?: string;
+}
+
+interface Admins{
+  _id:string;
+  username:string;
+  email:string;
+  profileImage:string;
+}
+
+export interface Company {
+  _id?: string;
+  name: string;
+  logo?: string;
+  contactNumber?: string;
+  address: string;
+  email: string;
+  isActive?: boolean;
+  admins?:Admins[];
+  createdAt:string; 
+  updatedAt:string;
+   createdBy?: string;
+   website?: string;
+   totalEmployees?: number;
+   location?: string;
+   industry?: string;
+   totalProjects?: string;
+   adminNames?: string;
+}
+
+export interface recentActivity{
+  _id?:string;
+  title: string;
+  createdAt: string;
+  updatedAt?: string;
+  date?: string;
+  createdBy: {
+    _id: string;
+    username: string;
+    profileImage: string;
+  };
+  createdByRole: string;
+  companyId: {
+    _id: string;
+    name: string;
+  };
+}
+
+export interface Admin{
+  _id?:string;
+  username:string;
+  email:string;
+  profileImage:string;
+  role?: string;
+  mobile?: string;
+  address?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  isActive?: boolean;
+  companyId?: {
+    _id?: string;
+    name: string;
+  };
+};
+
+
+export interface Setting{
+  _id?:string;
+  username?:string;
+  email?:string;
+  profileImage?:string;
+  department?: string;
+  contact?: string;
+  fullName?:string;
+  role?: string;
+  mobile?: string;
+  address?: string;
+  createdAt?: string;
+  joinDate?: string;
+  updatedAt?: string;
+  companyId?: {
+    _id?: string;
+    name: string;
+  };
+}
+
+
+export interface Attendances {
+  _id: string;
+  userId?:{
+    _id?: string;
+    fullName: string;
+    profileImage: string;
+  };
+  date: string;
+  clockIn?: string;
+  clockOut?: string;
+  status: "Present" | "Absent" | "Half Day" | "Late" | "Clocked In";
+  hoursWorked?: number;
+  createdBy?:{
+    _id: string;
+    name?: string;
+    logo: string;
+  };
+  createdAt: string;
+  updatedAt?: string;
+}
+
+
+
+export interface Employees{
+  _id?:string;
+  fullName: string;
+  email: string;
+  profileImage: string;
+  role?: string;
+  contact?: string;
+  department?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  status?: "ACTIVE" | "RELIEVED" | "ON_HOLD";
+  roleResponsibility?: string;
+  taskRoleDescription?: string;
+  taskRoleStatus?: string;
+  taskRole?: string;
+  monthSalary?: string;
+  relievingDate?: string;
+  joinDate?: string;
+  employeeType?: string;
+  lpa?: string;
+  createdBy?: string;
+  designation?: string;
+  documents?: {
+    aadhaar?: string;
+    panCard?: string;
+    bankPassbook?: string;
+    salarySlips?: string;
+  };
+  remarks?: string;
+}
+
+
+
+export interface leaveType{
+  _id: string;
+  name: string;
+  description: string;
+  createdAt: string;
+  updatedAt: string;
+  maxDaysAllowed: number;
+  paid: boolean;
+  color: string;
+}
+
+
+export interface leaveRequest{
+  _id: string;
+  user: {
+     _id: string;
+    fullName: string;
+    profileImage: string;
+  };
+  leaveType: {
+    _id: string;
+     name: string;
+     color: string;
+  };
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+  status: string;
+  fromDate: string;
+  toDate: string;
+  totalDays: number;
+  description: string;
+  appliedDate: string;
+  reviewedBy: string;
 }

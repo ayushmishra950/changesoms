@@ -496,6 +496,9 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import ProjectForm from "./ProjectForm";
 import AddManagerForm from "./AddManagerForm";
 import { TaskFormData, TaskFormModalProps } from "@/types";
+import { useAppDispatch, useAppSelector } from "@/redux-toolkit/hooks/hook";
+import { getProjects } from "@/redux-toolkit/slice/task/projectSlice";
+import { getManagers } from "@/redux-toolkit/slice/task/taskManagerSlice";
 
 const TaskForm: React.FC<TaskFormModalProps> = ({
   isOpen,
@@ -510,8 +513,8 @@ const TaskForm: React.FC<TaskFormModalProps> = ({
   const today = new Date().toISOString().split("T")[0];
   const { toast } = useToast();
   const { user } = useAuth();
-  const [projects, setProjects] = useState<any[]>([]);
-  const [managers, setManagers] = useState<any[]>([]);
+  // const [projects, setProjects] = useState<any[]>([]);
+  // const [managers, setManagers] = useState<any[]>([]);
   const [startDateTouched, setStartDateTouched] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [pendingPayload, setPendingPayload] = useState<any>(null);
@@ -524,6 +527,9 @@ const TaskForm: React.FC<TaskFormModalProps> = ({
   const [showArrow, setShowArrow] = useState(true);
   const startDateRef = useRef(null);
   const endDateRef = useRef(null);
+  const dispatch = useAppDispatch();
+  const projects = useAppSelector((state) => state.project.projects);
+  const managers = useAppSelector((state) => state.manager.managers);
 
   const handleScroll = () => {
     const el = formRef.current;
@@ -616,7 +622,7 @@ const TaskForm: React.FC<TaskFormModalProps> = ({
     if (!user?._id || (!user?.companyId?._id && !user?.createdBy?._id)) return;
     try {
       const res = await getProject(user._id, user.companyId?._id || user.createdBy?._id);
-      if (res.status === 200) setProjects(res.data);
+      if (res.status === 200) dispatch(getProjects(res.data));
     } catch (err: any) {
       toast({ title: "Error", description: err.response?.data?.message || "Failed to load projects" });
     }
@@ -625,18 +631,24 @@ const TaskForm: React.FC<TaskFormModalProps> = ({
   const handleGetManager = async () => {
     try {
       const res = await getTaskManager(user?._id, user?.companyId?._id || user?.createdBy?._id);
-      if (res.status === 200) setManagers(res.data);
+      if (res.status === 200) dispatch(getManagers(res.data));
     } catch (err: any) {
       toast({ title: "Error", description: err.response?.data?.message || "Failed to load managers" });
     }
   };
 
   useEffect(() => {
-    if (user?.role === "admin" || user?.taskRole === "manager") {
-      handleGetManager();
+    if ((user?.role === "admin" || user?.taskRole === "manager") && (projects.length === 0 || projectListRefresh)) {
       handleGetProject();
     }
-  }, [projectListRefresh, user, managerRefresh]);
+  }, [projectListRefresh, user, projects.length]);
+
+  
+  useEffect(() => {
+    if ((user?.role === "admin" || user?.taskRole === "manager") && (managers.length === 0 || managerRefresh)) {
+      handleGetManager();
+    }
+  }, [managers.length, user, managerRefresh]);
 
   return (
     <>

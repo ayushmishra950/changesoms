@@ -10,6 +10,7 @@ import { getEmployees, submitClockIn, submitClockOut, getAttendanceData } from "
 import { useNotifications } from "@/contexts/NotificationContext";
 import { Helmet } from "react-helmet-async";
 import AttendanceForm from "@/Forms/AttendanceDialog"
+import { useAppSelector } from "@/redux-toolkit/hooks/hook";
 
  const today = new Date();
 const getTodayDate = () => today.toISOString().split("T")[0];
@@ -18,55 +19,51 @@ const getTodayDate = () => today.toISOString().split("T")[0];
 const Attendance: React.FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [attendanceList, setAttendanceList] = useState<any[]>([]);
+  // const [attendanceList, setAttendanceList] = useState<any[]>([]);
   const [employeeList, setEmployeeList] = useState<any[]>([]);
-  const [attendanceRefresh, setAttendanceRefresh] = useState(0);
+  const [attendanceRefresh, setAttendanceRefresh] = useState(false);
   const [selectedDate, setSelectedDate] = useState(getTodayDate());
       const { notifications, markAsRead, deleteNotification } = useNotifications();
       const [attendanceForm, setAttendanceForm] = useState(false);
+    const attendanceList = useAppSelector((state) => state.attendance.attendance);
   
 
-  // =================== Fetch Employees ===================
-  const handleGetEmployees = async () => {
-    try {
-      const data = await getEmployees(user?.companyId?._id);
-      if (Array.isArray(data)) setEmployeeList(data);
-    } catch (err: any) {
-      toast({
-        title: "Error",
-        description: err?.response?.data?.message || "Something went wrong",
-        variant: "destructive",
-      });
-    }
-  };
+  // // =================== Fetch Employees ===================
+  // const handleGetEmployees = async () => {
+  //   try {
+  //     const data = await getEmployees(user?.companyId?._id);
+  //     if (Array.isArray(data)) setEmployeeList(data);
+  //   } catch (err: any) {
+  //     toast({
+  //       title: "Error",
+  //       description: err?.response?.data?.message || "Something went wrong",
+  //       variant: "destructive",
+  //     });
+  //   }
+  // };
 
-  // =================== Fetch Attendance ===================
-  const handleGetAttendances = async (date: string) => {
-    const selected = new Date(date);
+  // // =================== Fetch Attendance ===================
+  // const handleGetAttendances = async (date: string) => {
+  //   const selected = new Date(date);
 
-      const month = selected.getMonth() + 1; // JS months = 0–11
-      const year = selected.getFullYear();
-      const companyId = user?.role === "employee"? user?.createdBy?._id : user?.companyId?._id;
-      if(!month || !year || !companyId) return;
-    try {
-      const res = await getAttendanceData(month, year, companyId);
-  
-        if (Array.isArray(res?.data?.records)) setAttendanceList(res?.data?.records);
-    } catch (err: any) {
-      // toast({
-      //   title: "Error",
-      //   description: err?.response?.data?.message || "Something went wrong",
-      //   variant: "destructive",
-      // });
-    }
-  };
+  //     const month = selected.getMonth() + 1; // JS months = 0–11
+  //     const year = selected.getFullYear();
+  //     const companyId = user?.role === "employee"? user?.createdBy?._id : user?.companyId?._id;
+  //     if(!month || !year || !companyId) return;
+  //   try {
+  //     const res = await getAttendanceData(month, year, companyId);
+  //   } catch (err: any) {
+  //     // toast({
+  //     //   title: "Error",
+  //     //   description: err?.response?.data?.message || "Something went wrong",
+  //     //   variant: "destructive",
+  //     // });
+  //   }
+  // };
 
-  useEffect(() => {
-    if(user?.role === "admin"){
-    handleGetEmployees();
-    }
-    handleGetAttendances(selectedDate);
-  }, [notifications]);
+  // useEffect(() => {
+  //   handleGetAttendances(selectedDate);
+  // }, [notifications]);
 
   // =================== Clock In/Out ===================
   const handleClockIn = async () => {
@@ -74,8 +71,8 @@ const Attendance: React.FC = () => {
       const res = await submitClockIn(user?._id, user?.createdBy?._id);
       if (res.status === 200) {
         toast({ title: "Success", description: "You have successfully clocked in." });
-       setAttendanceRefresh(prev => prev + 1);
-       handleGetAttendances(selectedDate);
+       setAttendanceRefresh(true);
+      //  handleGetAttendances(selectedDate);
       }
     } catch (err: any) {
       toast({
@@ -91,8 +88,8 @@ const Attendance: React.FC = () => {
       const res = await submitClockOut(user?._id, user?.createdBy?._id);
       if (res.status === 200) {
         toast({ title: "Success", description: "You have successfully clocked out." });
-        setAttendanceRefresh(prev => prev + 1);
-        handleGetAttendances(selectedDate);
+        setAttendanceRefresh(true);
+        // handleGetAttendances(selectedDate);
       }
     } catch (err: any) {
       toast({
@@ -145,7 +142,8 @@ const attendanceUIState = useMemo(() => {
 
   return "NO_RECORD";
 }, [todayAttendance]);
-
+    
+        
 
   return (
     <>
@@ -213,7 +211,7 @@ const attendanceUIState = useMemo(() => {
       )}
 
       {/* Attendance Table */}
-      <AttendanceTable attendanceRefresh={attendanceRefresh} />
+      <AttendanceTable attendanceRefresh={attendanceRefresh} setAttendanceRefresh={setAttendanceRefresh} />
     </div>
     </>
   );

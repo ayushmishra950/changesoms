@@ -18,6 +18,9 @@ import { getOverdueTask, getProject, taskStatusChange, reassignTask, deleteTask 
 import { formatDate, getStatusColor, getPriorityColor } from "@/services/allFunctions";
 import DeleteCard from "@/components/cards/DeleteCard";
 import SubTaskDetailCard from "./cards/SubTaskDetailCard";
+import { useAppDispatch, useAppSelector } from "@/redux-toolkit/hooks/hook";
+import { getOverdueTasks } from "@/redux-toolkit/slice/task/overdueTaskSlice";
+import { getProjects } from "@/redux-toolkit/slice/task/projectSlice";
 
 interface IEmployee {
   _id: string;
@@ -43,8 +46,8 @@ interface OverdueTaskItem {
 const OverdueTask: React.FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [tasks, setTasks] = useState<OverdueTaskItem[]>([]);
-  const [projects, setProject] = useState([]);
+  // const [tasks, setTasks] = useState<OverdueTaskItem[]>([]);
+  // const [projects, setProject] = useState([]);
   const [search, setSearch] = useState<string>("");
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [filterProject, setFilterProject] = useState<string>("all");
@@ -61,7 +64,9 @@ const OverdueTask: React.FC = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState(null);
   const [newStatus, setNewStatus] = useState(null);
-
+  const dispatch = useAppDispatch();
+  const tasks = useAppSelector((state) => state.overdueTask.overdueTasks);
+  const projects = useAppSelector((state) => state.project.projects);
   const filteredTasks = tasks.filter(
     (t) =>
       t?.name?.toLowerCase().includes(search.toLowerCase()) &&
@@ -89,7 +94,7 @@ const OverdueTask: React.FC = () => {
 
   const handleConfirmDelete = async () => {
     console.log(selectedTaskId, user?.companyId?._id, user?._id)
-    if (!selectedTaskId || !user?.companyId?._id || !user?._id) return alert("missing fields");
+    if (!selectedTaskId || !user?.companyId?._id || !user?._id) return;
     let obj = { taskId: selectedTaskId, companyId: user?.companyId?._id || user?.createdBy?._id, adminId: user?._id }
     setIsDeleting(true);
     try {
@@ -138,7 +143,7 @@ const OverdueTask: React.FC = () => {
         const res = await getOverdueTask(user?._id, user?.companyId?._id || user?.createdBy?._id);
         console.log(res)
         if (res.status === 200) {
-          setTasks(res?.data?.data);
+          dispatch(getOverdueTasks(res?.data?.data || []));
           setTaskListRefresh(false);
         }
       }
@@ -153,7 +158,8 @@ const OverdueTask: React.FC = () => {
       try {
         const res = await getProject(user?._id, user?.companyId?._id);
         if (res.status === 200) {
-          setProject(res?.data);
+          // setProject(res?.data);
+          dispatch(getProjects(res?.data || []));
         }
       }
       catch (err) {
@@ -163,11 +169,16 @@ const OverdueTask: React.FC = () => {
   }
 
   useEffect(() => {
+    if(user?._id && (tasks?.length === 0 || taskListRefresh)){
     handleGetOverdueTask();
-    if (user?.role !== "employee") {
+    }
+  }, [user?._id, taskListRefresh, tasks?.length]);
+
+  useEffect(() => {
+    if (user?.role === "admin" && (projects?.length === 0)) {
       handleGetProject();
     }
-  }, [taskListRefresh])
+  }, [user?._id, projects?.length]);
 
   return (
     <>

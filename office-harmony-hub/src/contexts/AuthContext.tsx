@@ -3,6 +3,11 @@ import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { User, UserRole } from '@/types';
 import { useToast } from "@/hooks/use-toast";
 import {loginUser} from "@/services/Service";
+import { useAppDispatch, useAppSelector } from '@/redux-toolkit/hooks/hook';
+import { getCompany, getRecentActivities } from '@/redux-toolkit/slice/allPage/companySlice';
+import { getSetting } from '@/redux-toolkit/slice/allPage/settingSlice';
+import { getAdminList } from '@/redux-toolkit/slice/allPage/userSlice';
+import { getPayroll, getSinglePayroll } from '@/redux-toolkit/slice/allPage/payrollSlice';
 
 interface AuthContextType {
   user: User | null;
@@ -21,6 +26,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   });
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const dispatch = useAppDispatch();
 
 
   const login = async (email: string, password: string, role?: UserRole) => {
@@ -63,8 +69,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       description: `Logout Successfully.`,
     });
     setUser(null);
-    localStorage.removeItem('token');
+    localStorage.removeItem('accessToken');
     localStorage.removeItem('user');
+    dispatch(getCompany([]));
+    dispatch(getRecentActivities([]));
+    dispatch(getSetting(null));
+    dispatch(getAdminList([]));
+    dispatch(getPayroll([]));
+    dispatch(getSinglePayroll([]));
   };
 
   return (

@@ -14,7 +14,7 @@ const PayRoll = require("../models/payRollModel");
 const Department = require("../models/departmentModel.js");
 const Notification = require("../models/NotificationModel"); // Notification model
 const recentActivity = require("../models/recentActivityModel.js");
-const {generateAccessToken, generateRefreshToken} = require("../service/service.js")
+const { generateAccessToken, generateRefreshToken } = require("../service/service.js")
 
 // ---------------- Register Admin ----------------
 
@@ -64,7 +64,7 @@ const registerAdmin = async (req, res) => {
     company.admins = [newAdmin._id];
     await company.save();
 
-    await recentActivity.create({title:`New Admin Added.`, createdBy:userId, createdByRole:"Admin", companyId:companyId});
+    await recentActivity.create({ title: `New Admin Added.`, createdBy: userId, createdByRole: "Admin", companyId: companyId });
 
     return res.status(201).json({
       message: "Admin registered successfully",
@@ -87,7 +87,7 @@ const registerAdmin = async (req, res) => {
 // ---------------- Update Admin ----------------
 const updateAdmin = async (req, res) => {
   try {
-    const {id:adminId} = req.params;
+    const { id: adminId } = req.params;
     const { username, email, password, companyId, role, mobile, address, superAdminId } = req.body;
 
     // Superadmin check
@@ -137,25 +137,25 @@ const updateAdmin = async (req, res) => {
   }
 };
 
-const adminStatusChange = async(req,res) => {
-  try{
-     const {adminId, superAdminId, status} = req.body;
+const adminStatusChange = async (req, res) => {
+  try {
+    const { adminId, superAdminId, status } = req.body;
 
-        const superAdmin = await Admin.findById(superAdminId);
+    const superAdmin = await Admin.findById(superAdminId);
 
     if (!superAdmin || superAdmin.role !== "super_admin") {
       return res.status(403).json({ message: "Unauthorized. Only superadmins can delete admins." });
     }
-   
-       const admin = await Admin.updateOne({_id:adminId},{$set: {isActive:status}});
+
+    const admin = await Admin.updateOne({ _id: adminId }, { $set: { isActive: status } });
     if (!admin) return res.status(404).json({ message: "Admin not found" });
 
-    
 
-    return res.status(200).json({ message: `Admin ${status?"Active": "In-Active"} successfully.` });
+
+    return res.status(200).json({ message: `Admin ${status ? "Active" : "In-Active"} successfully.` });
   }
-  catch(err){
- console.error(err);
+  catch (err) {
+    console.error(err);
     return res.status(500).json({ message: `Server error = ${err?.message}` });
   }
 }
@@ -165,7 +165,7 @@ const adminStatusChange = async(req,res) => {
 const deleteAdmin = async (req, res) => {
   try {
 
-    const {id:adminId, userId:superAdminId} = req.query;
+    const { id: adminId, userId: superAdminId } = req.query;
 
     // Superadmin check
     const superAdmin = await Admin.findById(superAdminId);
@@ -299,6 +299,12 @@ const loginAdmin = async (req, res) => {
 
     if (!user) {
       return res.status(400).json({ message: "Invalid email" });
+    }
+
+    if (user?.role === "employee") {
+      if (user?.status === "RELIEVED") {
+        return res.status(400).json({ message: "Your account is inactive. Please contact your administrator for assistance." });
+      }
     }
 
     // 3️⃣ Password check
@@ -469,7 +475,7 @@ const getAllAdmins = async (req, res) => {
     const adminId = req.params.id;
     // 1️⃣ Check requesting admin
     const requestingAdmin = await Admin.findById(adminId)
-      
+
     if (!requestingAdmin) {
       return res.status(404).json({
         message: "Admin not found"
@@ -485,10 +491,10 @@ const getAllAdmins = async (req, res) => {
 
     // 3️⃣ Fetch all admins
     const admins = await Admin.find().select("-password").populate({
-    path: "companyId",
-    select: "name _id", // _id include optional, lekin mostly populate me reh jaata hai
-  })
-  .lean();;
+      path: "companyId",
+      select: "name _id", // _id include optional, lekin mostly populate me reh jaata hai
+    })
+      .lean();;
     res.status(200).json({
       message: "Admins fetched successfully",
       admins
@@ -502,52 +508,185 @@ const getAllAdmins = async (req, res) => {
   }
 };
 
+// const updateUser = async (req, res) => {
+//   try {
+//     const { userId, companyId, data } = req.body; // frontend sends data according to role
+//     if (!userId || !companyId || !data) {
+//       return res.status(400).json({ message: "userId, companyId and data are required" });
+//     }
+
+//     // 1️⃣ Validate company
+//     const company = await Company.findById(companyId);
+//     if (!company) return res.status(404).json({ message: "Invalid companyId" });
+
+//     let user = await Admin.findOne({ _id: userId, companyId });
+//     let modelName = "Admin";
+
+//     if (!user) {
+//       user = await Employee.findOne({ _id: userId, createdBy: companyId });
+//       if (!user) return res.status(404).json({ message: "User not found in this company" });
+//       modelName = "Employee";
+//     }
+
+//     // 2️⃣ Map frontend fields to backend model fields
+//     if (modelName === "Admin") {
+//       if (data?.username !== undefined) user.username = data.username;
+//       if (data?.mobile !== undefined) user.mobile = data.mobile;
+//       if (data?.profileImage !== undefined) user.profileImage = data.profileImage;
+//     } else {
+//       if (data?.fullName !== undefined) user.fullName = data.fullName;
+//       if (data?.contact !== undefined) user.contact = data.contact;
+//       if (data?.profileImage !== undefined) user.profileImage = data.profileImage;
+//     }
+
+//     // 3️⃣ Save updated user
+//     const updatedUser = await user.save();
+
+//     await recentActivity.create({ title: `Profile Updated.`, createdBy: user?.id, createdByRole: user?.role === "admin" ? "Admin" : "Employee", companyId: user?.companyId || user?.createdBy || null });
+
+
+//     res.status(200).json({
+//       message: `${modelName} updated successfully`,
+//       user: updatedUser,
+//     });
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).json({ message: "Server error" });
+//   }
+// };
+
+
 const updateUser = async (req, res) => {
   try {
-    const { userId, companyId, data } = req.body; // frontend sends data according to role
-    if (!userId || !companyId || !data) {
-      return res.status(400).json({ message: "userId, companyId and data are required" });
+    const { userId, companyId, data } = req.body;
+
+    if (!userId || !data) {
+      return res.status(400).json({
+        message: "userId and data are required",
+      });
     }
 
-    // 1️⃣ Validate company
-    const company = await Company.findById(companyId);
-    if (!company) return res.status(404).json({ message: "Invalid companyId" });
+    let user = null;
+    let role = null;
+    let companyReference = null;
 
-    let user = await Admin.findOne({ _id: userId, companyId });
-    let modelName = "Admin";
+    // 1️⃣ First check in Admin
+    const adminUser = await Admin.findById(userId);
 
-    if (!user) {
-      user = await Employee.findOne({ _id: userId, createdBy: companyId });
-      if (!user) return res.status(404).json({ message: "User not found in this company" });
-      modelName = "Employee";
+    if (adminUser) {
+      role = adminUser.role; // super_admin or admin
+
+      // 🔹 SUPER ADMIN (Skip company validation)
+      if (role === "super_admin") {
+        if (data?.username !== undefined)
+          adminUser.username = data.username;
+
+        if (data?.mobile !== undefined)
+          adminUser.mobile = data.mobile;
+
+        if (data?.profileImage !== undefined)
+          adminUser.profileImage = data.profileImage;
+
+        user = await adminUser.save();
+        companyReference = null;
+      } 
+      // 🔹 NORMAL ADMIN
+      else {
+        if (!companyId) {
+          return res.status(400).json({
+            message: "companyId is required for admin",
+          });
+        }
+
+        const company = await Company.findById(companyId);
+        if (!company) {
+          return res.status(404).json({
+            message: "Invalid companyId",
+          });
+        }
+
+        if (adminUser.companyId.toString() !== companyId) {
+          return res.status(403).json({
+            message: "Admin does not belong to this company",
+          });
+        }
+
+        if (data?.username !== undefined)
+          adminUser.username = data.username;
+
+        if (data?.mobile !== undefined)
+          adminUser.mobile = data.mobile;
+
+        if (data?.profileImage !== undefined)
+          adminUser.profileImage = data.profileImage;
+
+        user = await adminUser.save();
+        companyReference = companyId;
+      }
+    } 
+    // 2️⃣ If not Admin → check Employee
+    else {
+      if (!companyId) {
+        return res.status(400).json({
+          message: "companyId is required for employee",
+        });
+      }
+
+      const company = await Company.findById(companyId);
+      if (!company) {
+        return res.status(404).json({
+          message: "Invalid companyId",
+        });
+      }
+
+      const employee = await Employee.findOne({
+        _id: userId,
+        createdBy: companyId,
+      });
+
+      if (!employee) {
+        return res.status(404).json({
+          message: "User not found in this company",
+        });
+      }
+
+      role = "employee";
+
+      if (data?.fullName !== undefined)
+        employee.fullName = data.fullName;
+
+      if (data?.contact !== undefined)
+        employee.contact = data.contact;
+
+      if (data?.profileImage !== undefined)
+        employee.profileImage = data.profileImage;
+
+      user = await employee.save();
+      companyReference = companyId;
     }
 
-    // 2️⃣ Map frontend fields to backend model fields
-    if (modelName === "Admin") {
-      if (data?.username !== undefined) user.username = data.username;
-      if (data?.mobile !== undefined) user.mobile = data.mobile;
-      if (data?.profileImage !== undefined) user.profileImage = data.profileImage;
-    } else {
-      if (data?.fullName !== undefined) user.fullName = data.fullName;
-      if (data?.contact !== undefined) user.contact = data.contact;
-      if (data?.profileImage !== undefined) user.profileImage = data.profileImage;
-    }
-
-    // 3️⃣ Save updated user
-    const updatedUser = await user.save();
-
-    await recentActivity.create({title: `Profile Updated.`, createdBy:user?.id, createdByRole:user?.role==="admin"?"Admin":"Employee", companyId:user?.companyId || user?.createdBy || null});
-
-
-    res.status(200).json({
-      message: `${modelName} updated successfully`,
-      user: updatedUser,
+    // 3️⃣ Save Recent Activity (For All 3 Cases)
+    await recentActivity.create({
+      title: `Profile Updated`,
+      createdBy: user._id,
+      createdByRole:
+        role === "employee" ? "Employee" : "Admin",
+      companyId: companyReference,
     });
+
+    return res.status(200).json({
+      message: "User updated successfully",
+      user,
+    });
+
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Server error" });
+    console.error("Update User Error:", err);
+    return res.status(500).json({
+      message: "Server error",
+    });
   }
 };
+
 
 const changePassword = async (req, res) => {
   try {
@@ -620,7 +759,7 @@ const changePassword = async (req, res) => {
       title: "Password Updated",
       createdBy: user._id,
       createdByRole:
-        role === "admin"|| role==="super_admin" ? "Admin" : "Employee",
+        role === "admin" || role === "super_admin" ? "Admin" : "Employee",
       companyId: role === "super_admin" ? null : user.companyId || user.createdBy,
     });
 
@@ -651,7 +790,7 @@ const getDashboardSummary = async (req, res) => {
 
     // Fetch user and role
     const user =
-     (await Admin.findOne({ _id: userId, role:"super_admin" })) ||
+      (await Admin.findOne({ _id: userId, role: "super_admin" })) ||
       (await Admin.findOne({ _id: userId, companyId })) ||
       (await Employee.findOne({ _id: userId, createdBy: companyId }));
 
@@ -703,7 +842,7 @@ const getDashboardSummary = async (req, res) => {
         .sort({ createdAt: -1 })
         .limit(4);
 
-      const recentActivity = await RecentActivity.find({companyId:companyId, createdBy:userId}).populate("createdBy","username")
+      const recentActivity = await RecentActivity.find({ companyId: companyId, createdBy: userId }).populate("createdBy", "username")
 
       summary = {
         totalEmployees,
@@ -720,10 +859,10 @@ const getDashboardSummary = async (req, res) => {
         recentTasks,
         recentActivity
       };
-    } 
+    }
     else if (user.role === "employee") {
       // ================= Employee Summary =================
-   
+
 
       const pendingLeave = await LeaveRequest.countDocuments({
         userId: user._id,
@@ -735,23 +874,23 @@ const getDashboardSummary = async (req, res) => {
         userId: user._id,
         appliedDate: { $gte: startOfMonth, $lte: endOfMonth }
       });
-       let recentTasks = null;
-       let pendingTask = null;
-       let urgentTask = null;
-       let recentActivity = null;
-       if(user?.taskRole === "manager"){
-     recentActivity = await RecentActivity.find({companyId:companyId, createdBy:userId}).populate("createdBy","fullName")
-     pendingTask = await Task.countDocuments({managerId:user?._id, companyId, status: "pending" });
-      urgentTask = await Task.countDocuments({managerId:user?._id, companyId, status: "pending", urgent: true });
-     recentTasks = await Task.find({ managerId:user?._id, companyId }).sort({ createdAt: -1 }).populate("managerId").limit(4);
-       }
-       else if(user?.taskRole === "none"){
-             recentActivity = await RecentActivity.find({companyId:companyId, createdBy:userId}).populate("createdBy","fullName")
-         pendingTask = await SubTask.countDocuments({employeeId:user?._id, companyId, status: "pending" });
-       urgentTask = await SubTask.countDocuments({employeeId:user?._id, companyId, status: "pending", urgent: true });
-     recentTasks = await SubTask.find({ employeeId:user?._id, companyId }).populate("employeeId").sort({ createdAt: -1 }).limit(4);
-       }
-     
+      let recentTasks = null;
+      let pendingTask = null;
+      let urgentTask = null;
+      let recentActivity = null;
+      if (user?.taskRole === "manager") {
+        recentActivity = await RecentActivity.find({ companyId: companyId, createdBy: userId }).populate("createdBy", "fullName")
+        pendingTask = await Task.countDocuments({ managerId: user?._id, companyId, status: "pending" });
+        urgentTask = await Task.countDocuments({ managerId: user?._id, companyId, status: "pending", urgent: true });
+        recentTasks = await Task.find({ managerId: user?._id, companyId }).sort({ createdAt: -1 }).populate("managerId").limit(4);
+      }
+      else if (user?.taskRole === "none") {
+        recentActivity = await RecentActivity.find({ companyId: companyId, createdBy: userId }).populate("createdBy", "fullName")
+        pendingTask = await SubTask.countDocuments({ employeeId: user?._id, companyId, status: "pending" });
+        urgentTask = await SubTask.countDocuments({ employeeId: user?._id, companyId, status: "pending", urgent: true });
+        recentTasks = await SubTask.find({ employeeId: user?._id, companyId }).populate("employeeId").sort({ createdAt: -1 }).limit(4);
+      }
+
       summary = {
         pendingTask,
         urgentTask,
@@ -788,12 +927,12 @@ const getDashboardSummary = async (req, res) => {
       const employeeGrowth = totalEmployees
         ? Math.round((newEmployeesThisMonth / totalEmployees) * 100)
         : 0;
-     const recentTasks = await Project.find().populate("adminId")
-  .sort({ createdAt: -1 }) // descending, latest first
-  .limit(4);               // sirf 4 documents
+      const recentTasks = await Project.find().populate("adminId")
+        .sort({ createdAt: -1 }) // descending, latest first
+        .limit(4);               // sirf 4 documents
 
 
-           const  recentActivity = await RecentActivity.find({createdBy:userId})
+      const recentActivity = await RecentActivity.find({ createdBy: userId })
       summary = {
         totalCompanies,
         newCompaniesThisMonth,
@@ -899,31 +1038,31 @@ const analyticsReport = async (req, res) => {
     }
 
     const startOfLast6Months = new Date(
-  now.getFullYear(),
-  now.getMonth() - 6,
-  1
-);
+      now.getFullYear(),
+      now.getMonth() - 6,
+      1
+    );
 
 
     // ====== Expense grouped by day ======
-   const expenseGrouped = await Expense.aggregate([
-  {
-    $match: {
-      createdBy: new mongoose.Types.ObjectId(companyId),
-      createdAt: { $gte: startOfLast6Months, $lte: endOfMonth },
-    },
-  },
-  {
-    $group: {
-      _id: {
-        year: { $year: "$createdAt" },
-        month: { $month: "$createdAt" },
+    const expenseGrouped = await Expense.aggregate([
+      {
+        $match: {
+          createdBy: new mongoose.Types.ObjectId(companyId),
+          createdAt: { $gte: startOfLast6Months, $lte: endOfMonth },
+        },
       },
-      totalExpense: { $sum: "$amount" },
-    },
-  },
-  { $sort: { "_id.year": 1, "_id.month": 1 } },
-]);
+      {
+        $group: {
+          _id: {
+            year: { $year: "$createdAt" },
+            month: { $month: "$createdAt" },
+          },
+          totalExpense: { $sum: "$amount" },
+        },
+      },
+      { $sort: { "_id.year": 1, "_id.month": 1 } },
+    ]);
 
 
     // ====== Task summary ======
@@ -999,7 +1138,79 @@ const analyticsReport = async (req, res) => {
     return res.status(500).json({ message: "Server error", error: err.message });
   }
 };
+// YYYY-Www → start date of week
+function getStartOfWeekFromISO(isoWeek) {
+  const [yearStr, weekStr] = isoWeek.split("-W");
+  const year = parseInt(yearStr, 10);
+  const week = parseInt(weekStr, 10);
 
+  const jan1 = new Date(year, 0, 1);
+  const jan1Day = jan1.getDay(); // 0 = Sunday, 1 = Monday ...
+
+  const daysToFirstMonday = jan1Day <= 1 ? 1 - jan1Day : 8 - jan1Day;
+
+  const weekStart = new Date(jan1);
+  weekStart.setDate(jan1.getDate() + daysToFirstMonday + (week - 1) * 7);
+  weekStart.setHours(0, 0, 0, 0);
+
+  return weekStart;
+}
+
+// Controller
+const getUserWeeklyAttendanceReport = async (req, res) => {
+  try {
+    const { companyId, week } = req.query;
+
+    if (!mongoose.Types.ObjectId.isValid(companyId)) {
+      return res.status(400).json({ success: false, message: "Invalid company ID" });
+    }
+
+    const company = await Company.findById(companyId);
+    if (!company) {
+      return res.status(404).json({ success: false, message: "Company not found" });
+    }
+
+    if (!week) {
+      return res.status(400).json({ success: false, message: "Week is required" });
+    }
+
+    // Week start & end
+    const start = getStartOfWeekFromISO(week);
+    const end = new Date(start);
+    end.setDate(start.getDate() + 6);
+    end.setHours(23, 59, 59, 999);
+
+    // Fetch all attendance for that week and company
+    const attendanceRecords = await Attendance.find({
+      createdBy: companyId,
+      date: { $gte: start, $lte: end },
+    });
+
+    // Initialize day-wise summary
+    const weekDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    const summary = weekDays.map(day => ({ name: day, present: 0, absent: 0 }));
+
+    // Aggregate attendance
+    attendanceRecords.forEach(record => {
+      const dayIndex = new Date(record.date).getDay(); // 0 = Sunday, 1 = Monday ...
+      const jsDayIndex = dayIndex === 0 ? 6 : dayIndex - 1; // convert so Monday=0, Sunday=6
+
+      if (record.status === 'Present') summary[jsDayIndex].present += 1;
+      else if (record.status === 'Absent') summary[jsDayIndex].absent += 1;
+    });
+
+    return res.status(200).json({
+      success: true,
+      weekStart: start,
+      weekEnd: end,
+      summary,
+    });
+
+  } catch (err) {
+    console.error("Weekly Attendance Error:", err);
+    return res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};
 
 // const getNotificationData = async(req,res) =>{
 //   try{
@@ -1037,7 +1248,7 @@ const analyticsReport = async (req, res) => {
 //       }
 //       role = user?.role || "Employee";
 //     }
-   
+
 //     const notification = await Notification.find({companyId, userId}).populate("createdBy");
 
 //     res.status(200).json({notification, success:true, message:"successfully."})
@@ -1141,7 +1352,7 @@ const deleteNotifications = async (req, res) => {
       role = user.role || "employee";
     }
 
-    let filter= { _id: id, userId };
+    let filter = { _id: id, userId };
 
     if (role !== "super_admin") {
       // Company validation only for admin/employee
@@ -1208,6 +1419,7 @@ const deleteAllNotifications = async (req, res) => {
     }
 
     const notification = await Notification.deleteMany(filter);
+    if(!notification) return res.status(404).json({ message: "Notification Messages Not Found." });
 
     res.status(200).json({ message: "All Notification Messages Deleted Successfully." });
   } catch (err) {
@@ -1235,5 +1447,6 @@ module.exports = {
   deleteAllNotifications,
   adminStatusChange,
   refresh,
-  logout
+  logout,
+  getUserWeeklyAttendanceReport
 };

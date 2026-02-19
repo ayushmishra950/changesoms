@@ -24,6 +24,7 @@ import { getCompanys, registerAdmin, updateAdmin } from "@/services/Service";
 import { useAuth } from "@/contexts/AuthContext";
 import { EyeOff, Eye, Loader2 } from "lucide-react";
 import CompanyFormDialog from "@/Forms/CompanyFormDialog";
+import { useQuery } from "@tanstack/react-query";
 
 
 interface AdminFormDialogProps {
@@ -31,7 +32,7 @@ interface AdminFormDialogProps {
   setOpen: (val: boolean) => void;
   initialData?: any;
   mode?: boolean;
-  setadminListRefresh?: (value:boolean) => void;
+  setadminListRefresh?: (value: boolean) => void;
 }
 
 const AdminFormDialog: React.FC<AdminFormDialogProps> = ({
@@ -53,7 +54,7 @@ const AdminFormDialog: React.FC<AdminFormDialogProps> = ({
     role: "admin",
   });
 
-  const [companyList, setCompanyList] = useState<any[]>([]);
+  // const [companyList, setCompanyList] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -69,23 +70,47 @@ const AdminFormDialog: React.FC<AdminFormDialogProps> = ({
       mobile: "",
       role: "admin"
     })
-  }
-
-  // Fetch companies
-  const fetchCompanies = async () => {
-    try {
-      const res = await getCompanys(user?._id);
-      if (res.status === 200) {
-        setCompanyList(Array.isArray(res.data) ? res.data : []);
-      }
-    } catch (err) {
-      console.log(err);
-    }
   };
 
+  const { data, isLoading, refetch, error, isError } = useQuery({
+    queryKey: ['companies', user?._id],
+    queryFn: () => getCompanys(user?._id),
+    enabled: !!user?._id && user?.role === "super_admin",
+  });
+  const companyList = data?.status === 200 && Array.isArray(data?.data)
+    ? data.data
+    : [];
+
   useEffect(() => {
-    fetchCompanies();
-  }, [refreshCompanyList]);
+    if (isError && error) {
+      const err = error as any;
+      toast({
+        title: "Error",
+        description: err?.response?.data?.message || "Failed to fetch companies",
+        variant: "destructive"
+      });
+    }
+  }, [isError, error]);
+
+
+  // // Fetch companies
+  // const fetchCompanies = async () => {
+  //   try {
+  //     const res = await getCompanys(user?._id);
+  //     if (res.status === 200) {
+  //       setCompanyList(Array.isArray(res.data) ? res.data : []);
+  //     }
+  //   } catch (err) {
+  //     console.log(err);
+  //   }
+  // };
+
+  // useEffect(() => {
+  //   if (user?.role === "super_admin") {
+  //     fetchCompanies();
+  //   }
+
+  // }, [refreshCompanyList]);
   // Edit mode data
   useEffect(() => {
     if (initialData && mode === true) {
@@ -115,12 +140,12 @@ const AdminFormDialog: React.FC<AdminFormDialogProps> = ({
     try {
       let res;
       if (mode === false) {
-        res = await registerAdmin({...form, userId:user?._id});
+        res = await registerAdmin({ ...form, userId: user?._id });
 
       } else if (mode === true && initialData?._id) {
-        res = await updateAdmin(initialData?._id, {...form,superAdminId :user?._id});
+        res = await updateAdmin(initialData?._id, { ...form, superAdminId: user?._id });
       }
-    console.log(res)
+      console.log(res)
       if (res && (res.status === 200 || res.status === 201)) {
         toast({
           title: mode === false ? "Admin Created" : "Admin Updated",
@@ -134,207 +159,209 @@ const AdminFormDialog: React.FC<AdminFormDialogProps> = ({
       toast({
         title: "Error",
         description: err?.response?.data?.message || "Something went wrong",
-        variant:"destructive"
+        variant: "destructive"
       });
     } finally {
       setLoading(false);
     }
   };
 
+  if (isLoading) return <p>Loading...</p>;
+
   return (
     <>
-       <CompanyFormDialog
-          open={isDialogOpen}
-          setOpen={setIsDialogOpen}
-          initialData={null}
-          onSuccess={setRefreshCompanyList}
-          mode={false}
-        />
+      <CompanyFormDialog
+        open={isDialogOpen}
+        setOpen={setIsDialogOpen}
+        initialData={null}
+        onSuccess={setRefreshCompanyList}
+        mode={false}
+      />
 
-    <Dialog open={open} onOpenChange={(isOpen) => { if (!isOpen) { resetFrom() }; setOpen(isOpen) }}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>
-            {mode === false ? "Register New Admin" : "Edit Admin"}
-          </DialogTitle>
-          <DialogDescription>
-            {mode === false
-              ? "Add a new admin to the system."
-              : "Update admin details."}
-          </DialogDescription>
-        </DialogHeader>
+      <Dialog open={open} onOpenChange={(isOpen) => { if (!isOpen) { resetFrom() }; setOpen(isOpen) }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {mode === false ? "Register New Admin" : "Edit Admin"}
+            </DialogTitle>
+            <DialogDescription>
+              {mode === false
+                ? "Add a new admin to the system."
+                : "Update admin details."}
+            </DialogDescription>
+          </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+          <form onSubmit={handleSubmit} className="space-y-4 mt-4">
 
-          {/* Row 1: Name + Email */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Name</Label>
-              <Input
-                name="username"
-                value={form.username}
-                onChange={handleChange}
-                placeholder="Enter admin name"
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Email</Label>
-              <Input
-                name="email"
-                type="email"
-                value={form.email}
-                onChange={handleChange}
-                placeholder="admin@email.com"
-                required
-              />
-            </div>
-          </div>
-
-          {/* Row 2: Mobile + Address */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Mobile</Label>
-              <Input
-                name="mobile"
-                value={form.mobile}
-                onChange={handleChange}
-                placeholder="+91 98765 43210"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Address</Label>
-              <Input
-                name="address"
-                value={form.address}
-                onChange={handleChange}
-                placeholder="Enter address"
-              />
-            </div>
-          </div>
-
-          {/* Row 3: Password + Company */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Password</Label>
-
-              <div className="relative">
+            {/* Row 1: Name + Email */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Name</Label>
                 <Input
-                  name="password"
-                  type={showPassword ? "text" : "password"}
-                  value={form.password}
+                  name="username"
+                  value={form.username}
                   onChange={handleChange}
-                  placeholder="Enter password"
-                  required={mode === false}
-                  disabled={mode === true} // <-- Disabled if mode is true
-                  className="pr-10"
+                  placeholder="Enter admin name"
+                  required
                 />
+              </div>
 
-                {mode === false && (
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary"
-                  >
-                    {showPassword ? (
-                      <EyeOff className="w-4 h-4" />
-                    ) : (
-                      <Eye className="w-4 h-4" />
-                    )}
-                  </button>
+              <div className="space-y-2">
+                <Label>Email</Label>
+                <Input
+                  name="email"
+                  type="email"
+                  value={form.email}
+                  onChange={handleChange}
+                  placeholder="admin@email.com"
+                  required
+                />
+              </div>
+            </div>
+
+            {/* Row 2: Mobile + Address */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Mobile</Label>
+                <Input
+                  name="mobile"
+                  value={form.mobile}
+                  onChange={handleChange}
+                  placeholder="+91 98765 43210"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Address</Label>
+                <Input
+                  name="address"
+                  value={form.address}
+                  onChange={handleChange}
+                  placeholder="Enter address"
+                />
+              </div>
+            </div>
+
+            {/* Row 3: Password + Company */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Password</Label>
+
+                <div className="relative">
+                  <Input
+                    name="password"
+                    type={showPassword ? "text" : "password"}
+                    value={form.password}
+                    onChange={handleChange}
+                    placeholder="Enter password"
+                    required={mode === false}
+                    disabled={mode === true} // <-- Disabled if mode is true
+                    className="pr-10"
+                  />
+
+                  {mode === false && (
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary"
+                    >
+                      {showPassword ? (
+                        <EyeOff className="w-4 h-4" />
+                      ) : (
+                        <Eye className="w-4 h-4" />
+                      )}
+                    </button>
+                  )}
+                </div>
+
+                {mode === true && (
+                  <p className="text-xs text-muted-foreground">Password cannot be changed</p>
                 )}
               </div>
 
-              {mode === true && (
-                <p className="text-xs text-muted-foreground">Password cannot be changed</p>
-              )}
+              <div className="space-y-1.5">
+                <Label className="text-sm font-medium">Company</Label>
+
+                <Select
+                  value={form.companyId || ""}
+                  onValueChange={handleCompanyChange}
+                  disabled={companyList?.length === 0} // disable if no companies
+                >
+                  <SelectTrigger className="h-9 sm:h-10 text-sm">
+                    <SelectValue placeholder="Select company" />
+                  </SelectTrigger>
+
+                  {/* Only show content if there are companies */}
+                  {companyList?.length > 0 && (
+                    <SelectContent className="max-h-48 overflow-y-auto">
+                      {companyList.map((company) => (
+                        <SelectItem key={company._id} value={company._id}>
+                          {company.name}
+                        </SelectItem>
+                      ))}
+
+                      {/* Divider + Add More button */}
+                      <div className="border-t my-1" />
+
+                      <button
+                        type="button"
+                        onClick={() => setIsDialogOpen(true)}
+                        className="w-full text-left px-2 py-1.5 text-sm text-primary hover:bg-muted rounded-sm"
+                      >
+                        + Add More Company
+                      </button>
+                    </SelectContent>
+                  )}
+                </Select>
+
+                {/* Show message + add button if no companies */}
+                {companyList?.length === 0 && (
+                  <div className="flex items-center justify-between text-xs text-red-500 mt-1">
+                    <span>Please add company first</span>
+
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={() => setIsDialogOpen(true)}
+                      className="h-7 px-3 text-xs"
+                    >
+                      + Add Company
+                    </Button>
+                  </div>
+                )}
+              </div>
+
             </div>
 
-         <div className="space-y-1.5">
-  <Label className="text-sm font-medium">Company</Label>
-
-  <Select
-    value={form.companyId || ""}
-    onValueChange={handleCompanyChange}
-    disabled={companyList?.length === 0} // disable if no companies
-  >
-    <SelectTrigger className="h-9 sm:h-10 text-sm">
-      <SelectValue placeholder="Select company" />
-    </SelectTrigger>
-
-    {/* Only show content if there are companies */}
-    {companyList?.length > 0 && (
-      <SelectContent className="max-h-48 overflow-y-auto">
-        {companyList.map((company) => (
-          <SelectItem key={company._id} value={company._id}>
-            {company.name}
-          </SelectItem>
-        ))}
-
-        {/* Divider + Add More button */}
-        <div className="border-t my-1" />
-
-        <button
-          type="button"
-          onClick={() => setIsDialogOpen(true)}
-          className="w-full text-left px-2 py-1.5 text-sm text-primary hover:bg-muted rounded-sm"
-        >
-          + Add More Company
-        </button>
-      </SelectContent>
-    )}
-  </Select>
-
-  {/* Show message + add button if no companies */}
-  {companyList?.length === 0 && (
-    <div className="flex items-center justify-between text-xs text-red-500 mt-1">
-      <span>Please add company first</span>
-
-      <Button
-        type="button"
-        size="sm"
-        onClick={() => setIsDialogOpen(true)}
-        className="h-7 px-3 text-xs"
-      >
-        + Add Company
-      </Button>
-    </div>
-  )}
-</div>
-
-          </div>
-
-          <DialogFooter className="pt-4 flex justify-end gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setOpen(false)}
-              disabled={loading}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              disabled={
-                loading ||
-                !form?.username ||
-                !form?.email ||
-                !form?.mobile ||
-                !form?.role ||
-                !form?.companyId ||
-                (mode === false && !form?.password) // <-- password required only if mode is false
-              }
-            >
-              {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-              {mode === false ? "Register" : "Update"}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
-</>
+            <DialogFooter className="pt-4 flex justify-end gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setOpen(false)}
+                disabled={loading}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={
+                  loading ||
+                  !form?.username ||
+                  !form?.email ||
+                  !form?.mobile ||
+                  !form?.role ||
+                  !form?.companyId ||
+                  (mode === false && !form?.password) // <-- password required only if mode is false
+                }
+              >
+                {loading && <Loader2 className="w-4 h-4 animate-spin" />}
+                {mode === false ? "Register" : "Update"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 

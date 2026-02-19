@@ -17,6 +17,9 @@ import { getSubTask, statusChangeSubTask, reassignSubTask, deleteSubTask , getEm
 import { formatDate } from "@/services/allFunctions";
 import DeleteCard from "@/components/cards/DeleteCard";
 import { useLocation } from "react-router-dom";
+import { useAppDispatch, useAppSelector } from "@/redux-toolkit/hooks/hook";
+import { getEmployeeList } from "@/redux-toolkit/slice/allPage/userSlice";
+import { getSubTasks } from "@/redux-toolkit/slice/task/subTaskSlice";
 
 
 const SubTask: React.FC = () => {
@@ -33,13 +36,16 @@ const SubTask: React.FC = () => {
   const [isSubTaskDetailCardOpen, setIsSubTaskDetailCardOpen] = useState(false);
   const [selectedSubTask, setSelectedSubTask] = useState(null);
   const [reassignName, setReassignName] = useState("Employee");
-  const [subTaskList, setSubTaskList] = useState([]);
+  // const [subTaskList, setSubTaskList] = useState([]);
   const [subTaskListRefresh, setSubTaskListRefresh] = useState(false);
   const [newStatus, setNewStatus] = useState(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [selectedSubTaskId, setSelectedSubTaskId] = useState(null);
-    const [employeeList, setEmployeeList] = useState<any[]>([]);
+    // const [employeeList, setEmployeeList] = useState<any[]>([]);
+    const dispatch = useAppDispatch();
+    const subTaskList = useAppSelector((state) => state.subTask.subTasks);
+    const employeeList = useAppSelector((state) => state.user.employees);
   
   const location = useLocation();
   const taskId = location?.state?.id;
@@ -78,7 +84,9 @@ const SubTask: React.FC = () => {
       try {
         const data = await getEmployees(user?.companyId?._id || user?.createdBy?._id);
         console.log(data, user)
-        if (Array.isArray(data)) setEmployeeList(data);
+        if (Array.isArray(data)) {
+          dispatch(getEmployeeList(data));
+        }
       } catch (err: any) {
         toast({
           title: "Error",
@@ -89,9 +97,10 @@ const SubTask: React.FC = () => {
     };
 
       useEffect(()=>{
-        if(user?.role !=="admin" && user?.taskRole !=="manager") return;
+       if((user?.role === "admin" || user?.taskRole === "manager") && employeeList.length === 0){
           handleGetEmployees();
-        }, []);
+       }
+        }, [user?._id, employeeList.length]);
 
            const handleOpenSubTaskForm = () => {
   // 1️⃣ No employees
@@ -119,7 +128,8 @@ const SubTask: React.FC = () => {
       const res = await getSubTask(obj);
       console.log(res)
       if (res.status === 200) {
-        setSubTaskList(res.data.data);
+        // setSubTaskList(res.data.data);
+        dispatch(getSubTasks(res.data.data));
         setSubTaskListRefresh(false);
       }
     }
@@ -130,8 +140,10 @@ const SubTask: React.FC = () => {
   }
 
   useEffect(() => {
+    if(user?._id && (subTaskList?.length === 0 || subTaskListRefresh)){
     handleGetSubTask()
-  }, [subTaskListRefresh]);
+    }
+  }, [subTaskListRefresh, user?._id, subTaskList.length]);
 
   const handleChangeStatus = async () => {
     let obj = { userId: user?._id, companyId: user?.companyId?._id || user?.createdBy?._id, subTaskId: selectedSubTask?._id, status: newStatus }

@@ -24,56 +24,93 @@ export function formatDate(isoDate, format = 'short', locale = 'en-US') {
 }
 
 //  date ko date input m convert karne k liye taki input samajhkar ise input  m show kar sake
- export const formatDateFromInput = (date: string | Date | undefined) => {
+export const formatDateFromInput = (date: string | Date | undefined) => {
   if (!date) return "";
   return new Date(date).toISOString().split("T")[0];
 };
 
+// Convert "HH:mm" to AM/PM format safely
+export const formatClock = (time) => {
+  if (!time) return "—"; // missing data case
+  const [hourStr, minuteStr] = time.split(":");
+  let hour = parseInt(hourStr, 10);
+  const minute = minuteStr || "00";
+
+  const period = hour >= 12 ? "PM" : "AM";
+  if (hour === 0) hour = 12; // midnight
+  else if (hour > 12) hour -= 12;
+
+  return `${hour}:${minute} ${period}`;
+};
+
+export const getCurrentMonthAndYear = () => {
+  const today = new Date();
+  const month = String(today.getMonth() + 1).padStart(2, '0'); // Months are zero-based
+  const year = today.getFullYear();
+  return `${year}-${month}`;
+};
+
+// Get current week in YYYY-Www format
+export const getCurrentWeek = (): string => {
+  const now = new Date();
+  const year = now.getFullYear();
+
+  const firstDayOfYear = new Date(year, 0, 1);
+  const dayOfYear = Math.floor(
+    (now.getTime() - firstDayOfYear.getTime()) / (24 * 60 * 60 * 1000) + 1
+  );
+
+  const weekNumber = Math.ceil((dayOfYear - now.getDay() + 1) / 7);
+  const weekStr = String(weekNumber).padStart(2, "0");
+
+  return `${year}-W${weekStr}`;
+};
 
 
- export const getStatusColor = (status: string) => {
-    switch (status) {
-      case "pending":
-        return "bg-yellow-100 text-yellow-800";
-      case "active":
-        return "bg-blue-100 text-blue-800";
-      case "completed":
-        return "bg-green-100 text-green-800";
-      case "overdue":
-        return "bg-red-100 text-red-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
-  };
 
-  export const getPriorityColor = (priority:string)=>{
-    switch (priority){
-      case "low": return "bg-yellow-100 text-yellow-800";
-      case "high" : return "bg-blue-100 text-blue-800";
-      case "medium" : return "bg-green-100 text-green-800";
-      case "urgent" : return "bg-red-100 text-red-800";
-       default: return "bg-gray-100 text-gray-800";
-    }
+export const getStatusColor = (status: string) => {
+  switch (status) {
+    case "pending":
+      return "bg-yellow-100 text-yellow-800";
+    case "active":
+      return "bg-blue-100 text-blue-800";
+    case "completed":
+      return "bg-green-100 text-green-800";
+    case "overdue":
+      return "bg-red-100 text-red-800";
+    default:
+      return "bg-gray-100 text-gray-800";
   }
+};
 
-  
- export const getStatusColorfromEmployee = (status: string) => {
+export const getPriorityColor = (priority: string) => {
+  switch (priority) {
+    case "low": return "bg-yellow-100 text-yellow-800";
+    case "high": return "bg-blue-100 text-blue-800";
+    case "medium": return "bg-green-100 text-green-800";
+    case "urgent": return "bg-red-100 text-red-800";
+    default: return "bg-gray-100 text-gray-800";
+  }
+}
 
-    switch (status) {
-      case 'ACTIVE': return 'bg-green-100 text-green-800 border-green-500';
-      case 'RELIEVED': return 'bg-red-100 text-red-800 border-red-500';
-      case 'ON_HOLD': return 'bg-yellow-100 text-yellow-800 border-yellow-500';
-      default: return 'bg-gray-100 text-gray-800 border-gray-500';
-    }
-  };
 
- export const getEventColor = (eventType: string) => {
-    switch (eventType) {
-      case 'Salary Change': return 'bg-purple-100 text-purple-800';
-      case 'Profile Update': return 'bg-teal-100 text-teal-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
+export const getStatusColorfromEmployee = (status: string) => {
+
+  switch (status) {
+    case 'ACTIVE': return 'bg-green-100 text-green-800 border-green-500';
+    case 'RELIEVED': return 'bg-red-100 text-red-800 border-red-500';
+    case 'ON_HOLD': return 'bg-yellow-100 text-yellow-800 border-yellow-500';
+    default: return 'bg-gray-100 text-gray-800 border-gray-500';
+  }
+};
+
+export const getEventColor = (eventType: string) => {
+  switch (eventType) {
+    case 'Salary Change': return 'bg-purple-100 text-purple-800';
+    case 'Profile Update': return 'bg-teal-100 text-teal-800';
+    default: return 'bg-gray-100 text-gray-800';
+  }
+};
 
 // utils/tasks.ts
 export const getOverdueTasks = (projects: any[], role: string) => {
@@ -112,7 +149,7 @@ export const getOverdueTasks = (projects: any[], role: string) => {
 export const getTaskCountByStatus = (
   projects: any[] = [],
   status?: string,
-role: "admin" | "employee" = "employee"
+  role: "admin" | "employee" = "employee"
 ) => {
   if (role === "admin") {
     // Admin: iterate through projects
@@ -154,6 +191,8 @@ export interface SidebarProps {
   setActiveSidebar: React.Dispatch<React.SetStateAction<string>>;
   setTaskSubPage: React.Dispatch<React.SetStateAction<string>>;
   setTaskName: React.Dispatch<React.SetStateAction<string>>;
+  setJobSubPage: React.Dispatch<React.SetStateAction<string>>;
+  setJobName: React.Dispatch<React.SetStateAction<string>>;
 
 }
 export interface NavItem {
@@ -169,7 +208,7 @@ export const navItems: NavItem[] = [
   { icon: FolderKanban, label: 'Tasks', path: '/tasks', roles: ['admin', 'employee'] },
   { icon: Clock, label: 'Attendance', path: '/attendances', roles: ['admin', 'employee'] },
   { icon: CalendarDays, label: 'Leave', path: '/leaves', roles: ['admin', 'employee'] },
-   { icon: Briefcase, label: 'Departments', path: '/departments', roles: ['admin'] },
+  { icon: Briefcase, label: 'Departments', path: '/departments', roles: ['admin'] },
   { icon: Users, label: 'Employees', path: '/users', roles: ['super_admin', 'admin'] },
   { icon: Receipt, label: 'Expenses', path: '/expenses', roles: ['admin'] },
   { icon: Wallet, label: 'Payroll', path: '/payrolls', roles: ['admin', 'employee'] },
@@ -179,7 +218,7 @@ export const navItems: NavItem[] = [
 ];
 
 /** Task Submenu (Admin/Super Admin Only) */
- export const taskSubMenu = [
+export const taskSubMenu = [
   { label: 'Dashboard', path: '/tasks', roles: ["admin", "manager", "employee"] },
   { label: 'Projects', path: '/tasks/projects', roles: ["admin"] },
   { label: 'Tasks', path: '/tasks/task', roles: ["admin", "manager", "employee"] },
@@ -203,82 +242,324 @@ export const JobSubMenu = [
 
 
 
-  export const getStatusStyle = (status: string) => {
-    switch (status) {
-      case "Present": return { bg: "bg-green-100 text-green-800", text: "Present" };
-      case "Absent": return { bg: "bg-red-100 text-red-800", text: "Absent" };
-      case "Half Day": return { bg: "bg-yellow-100 text-yellow-800", text: "Half Day" };
-      case "Late": return { bg: "bg-orange-100 text-orange-800", text: "Late" };
-      case "No Data": return { bg: "bg-blue-50 text-blue-400", text: "-" };
-      default: return { bg: "bg-gray-100 text-gray-500", text: "-" };
-    }
-  };
-
-  export const getMonthlySummary = (userId: string, attendanceMap) => {
-    const userData = attendanceMap[userId];
-    const summary = { present: 0, absent: 0, halfDay: 0, late: 0 };
-    if (!userData) return summary;
-
-    Object.values(userData.attendanceByDate).forEach((att: any) => {
-      switch (att.status) {
-        case "Present": summary.present++; break;
-        case "Absent": summary.absent++; break;
-        case "Half Day": summary.halfDay++; break;
-        case "Late": summary.late++; break;
-      }
-    });
-
-    return summary;
-  };
-
-
-export const headingManage = (value: string, role: string, subPage?: string, taskName?:string) => {
-  // Tasks ke liye subPage ko use karenge
-  if (taskName === "Tasks" && subPage) {
-    switch(subPage) {
-      case "Dashboard": 
-        return { title: "Dashboard", description: "Overview of your Projects and Tasks.", icon: "LayoutDashboard" };
-      case "Projects": 
-        return { title: "Projects", description: "Manage and track your ongoing projects.", icon: "Folder" };
-      case "Tasks": 
-        return { title: "Tasks", description: "Manage and track your ongoing Tasks.", icon: "CheckSquare" };
-      case "Sub Tasks": 
-        return { title: "Sub Tasks", description: "Manage and track your ongoing SubTasks.", icon: "Layers" };
-      case "Overdue Tasks": 
-        return { title: "Overdue Tasks", description: "Manage and track your ongoing Overdue Tasks.", icon: "AlertCircle" };
-      case "Task Manager": 
-        return { title: "Task Manager", description: "Manage and track your ongoing Department Managers.", icon: "Users" };
-      default:
-        return { title: "Dashboard", description: "Overview of your Projects and Tasks.", icon: "LayoutDashboard" };
-    }
-  }
-
-  // Baaki values ke liye
-  switch(value) {
-    case "Dashboard": 
-      return { title: "Admin Dashboard", description: "Welcome back! Here's what's happening today.", icon: "LayoutDashboard" };
-    case "Attendance": 
-      return { title: "Attendance", description: role==="admin" ? "Overview of all employees' attendance." : "Your daily attendance record.", icon: "Clock" };
-    case "Leave": 
-      return { title: "Leave Management", description: role==="admin" ? "Manage employee leave requests & types." : "Apply for leave and track your requests", icon: "CalendarDays" };
-    case "Departments": 
-      return { title: "Departments", description: "Manage company departments and team structure.", icon: "Briefcase" };
-    case "Employees": 
-      return { title: role==="super_admin" ? "Manage Admins" : "Manage Employees", description: role==="super_admin" ? "Create and manage admin accounts." : "Create and manage employee accounts.", icon: "UsersIcon" };
-    case "Expenses": 
-      return { title: "Expense", description: "View and manage your own expenses.", icon: "LayoutDashboard" };
-    case "Payroll": 
-      return { title: "Payroll Management", description: "Manage employee salaries and generate payslips.", icon: "Wallet" };
-    case "Job-Portal": 
-      return { title: "Job-Portal", description: "", icon: "LayoutDashboard" };
-    case "Reports": 
-      return { title: "Reports & Analytics", description: "Comprehensive insights into your organization's performance.", icon: "BarChart3" };
-    case "Setting": 
-      return { title: "Setting", description: "Manage your account settings and preferences.", icon: "SettingsIcon" };
-    case "Companies": 
-      return { title: "Company", description: "Manage your company's profile, settings, and overall structure.", icon: "Building2" };
-    default: 
-      return { title: "Admin Dashboard", description: "Welcome back! Here's what's happening today.", icon: "LayoutDashboard" };
+export const getStatusStyle = (status: string) => {
+  switch (status) {
+    case "Present": return { bg: "bg-green-100 text-green-800", text: "Present" };
+    case "Absent": return { bg: "bg-red-100 text-red-800", text: "Absent" };
+    case "Half Day": return { bg: "bg-yellow-100 text-yellow-800", text: "Half Day" };
+    case "Late": return { bg: "bg-orange-100 text-orange-800", text: "Late" };
+    case "No Data": return { bg: "bg-blue-50 text-blue-400", text: "-" };
+    default: return { bg: "bg-gray-100 text-gray-500", text: "-" };
   }
 };
 
+export const getMonthlySummary = (userId: string, attendanceMap) => {
+  const userData = attendanceMap[userId];
+  const summary = { present: 0, absent: 0, halfDay: 0, late: 0 };
+  if (!userData) return summary;
+
+  Object.values(userData.attendanceByDate).forEach((att: any) => {
+    switch (att.status) {
+      case "Present": summary.present++; break;
+      case "Absent": summary.absent++; break;
+      case "Half Day": summary.halfDay++; break;
+      case "Late": summary.late++; break;
+    }
+  });
+
+  return summary;
+};
+
+
+// export const headingManage = (value: string, role: string, subPage?: string, taskName?: string, jobName?: string, jobSubPage?: string) => {
+//   // Tasks ke liye subPage ko use karenge
+//   if (taskName === "Tasks" && subPage) {
+//     switch (subPage) {
+//       case "Dashboard":
+//         return { title: "Dashboard", description: "Overview of your Projects and Tasks.", icon: "LayoutDashboard" };
+//       case "Projects":
+//         return { title: "Projects", description: "Manage and track your ongoing projects.", icon: "Folder" };
+//       case "Tasks":
+//         return { title: "Tasks", description: "Manage and track your ongoing Tasks.", icon: "CheckSquare" };
+//       case "Sub Tasks":
+//         return { title: "Sub Tasks", description: "Manage and track your ongoing SubTasks.", icon: "Layers" };
+//       case "Overdue Tasks":
+//         return { title: "Overdue Tasks", description: "Manage and track your ongoing Overdue Tasks.", icon: "AlertCircle" };
+//       case "Task Manager":
+//         return { title: "Task Manager", description: "Manage and track your ongoing Department Managers.", icon: "Users" };
+//       default:
+//         return { title: "Dashboard", description: "Overview of your Projects and Tasks.", icon: "LayoutDashboard" };
+//     }
+//   }
+
+//   if (jobName === "Job-Portal" || jobSubPage) {
+//     switch (jobSubPage) {
+//       case "Dashboard":
+//         return { title: "Dashboard", description: "Get a complete overview of recruitment performance, recent activity, and key hiring metrics.", icon: "LayoutDashboard" };
+
+//       case "Candidates":
+//         return { title: "Candidates", description: "View, manage, and organize candidate profiles throughout the hiring process.", icon: "Users" };
+
+//       case "Applications":
+//         return { title: "Applications", description: "Track job applications, review statuses, and monitor applicant progress efficiently.", icon: "FileCheck" };
+
+//       case "Companys":
+//         return { title: "Companies", description: "Manage partnered companies, client profiles, and organizational details.", icon: "Building2" };
+
+//       case "Jobs":
+//         return { title: "Jobs", description: "Create, update, and monitor job postings along with their hiring status.", icon: "Briefcase" };
+
+//       case "Revenue":
+//         return { title: "Revenue", description: "Analyze earnings, recruitment revenue streams, and financial performance insights.", icon: "TrendingUp" };
+
+//       case "Setting":
+//         return { title: "Settings", description: "Configure portal preferences, permissions, and system-level configurations.", icon: "Settings" };
+
+//       default:
+//         return { title: "Dashboard", description: "Get a complete overview of recruitment performance, recent activity, and key hiring metrics.", icon: "LayoutDashboard" };
+//     }
+//   }
+
+//   // Baaki values ke liye
+//   switch (value) {
+//     case "Dashboard":
+//       return { title: "Admin Dashboard", description: "Welcome back! Here's what's happening today.", icon: "LayoutDashboard" };
+//     case "Attendance":
+//       return { title: "Attendance", description: role === "admin" ? "Overview of all employees' attendance." : "Your daily attendance record.", icon: "Clock" };
+//     case "Leave":
+//       return { title: "Leave Management", description: role === "admin" ? "Manage employee leave requests & types." : "Apply for leave and track your requests", icon: "CalendarDays" };
+//     case "Departments":
+//       return { title: "Departments", description: "Manage company departments and team structure.", icon: "Briefcase" };
+//     case "Employees":
+//       return { title: role === "super_admin" ? "Manage Admins" : "Manage Employees", description: role === "super_admin" ? "Create and manage admin accounts." : "Create and manage employee accounts.", icon: "UsersIcon" };
+//     case "Expenses":
+//       return { title: "Expense", description: "View and manage your own expenses.", icon: "LayoutDashboard" };
+//     case "Payroll":
+//       return { title: "Payroll Management", description: "Manage employee salaries and generate payslips.", icon: "Wallet" };
+//     case "Job-Portal":
+//       return { title: "Job-Portal", description: "", icon: "LayoutDashboard" };
+//     case "Reports":
+//       return { title: "Reports & Analytics", description: "Comprehensive insights into your organization's performance.", icon: "BarChart3" };
+//     case "Setting":
+//       return { title: "Setting", description: "Manage your account settings and preferences.", icon: "SettingsIcon" };
+//     case "Companies":
+//       return { title: "Company", description: "Manage your company's profile, settings, and overall structure.", icon: "Building2" };
+//     default:
+//       return { title: "Admin Dashboard", description: "Welcome back! Here's what's happening today.", icon: "LayoutDashboard" };
+//   }
+// };
+
+
+
+
+// headingManage.ts
+export const headingManage = (path: string, role: string) => {
+  // ----------------------------
+  // Tasks Section
+  // ----------------------------
+  if (path.startsWith("/tasks")) {
+    if (path === "/tasks") {
+      return {
+        title: "Dashboard",
+        description: "Overview of your Projects and Tasks.",
+        icon: "LayoutDashboard",
+      };
+    }
+    if (path === "/tasks/projects") {
+      return {
+        title: "Projects",
+        description: "Manage and track your ongoing projects.",
+        icon: "Folder",
+      };
+    }
+    if (path === "/tasks/task") {
+      return {
+        title: "Tasks",
+        description: "Manage and track your ongoing Tasks.",
+        icon: "CheckSquare",
+      };
+    }
+    if (path === "/tasks/sub-task") {
+      return {
+        title: "Sub Tasks",
+        description: "Manage and track your ongoing SubTasks.",
+        icon: "Layers",
+      };
+    }
+    if (path === "/tasks/overdue") {
+      return {
+        title: "Overdue Tasks",
+        description: "Manage and track your ongoing Overdue Tasks.",
+        icon: "AlertCircle",
+      };
+    }
+    if (path === "/tasks/manager") {
+      return {
+        title: "Task Manager",
+        description: "Manage and track your Department Managers.",
+        icon: "Users",
+      };
+    }
+    return {
+      title: "Tasks",
+      description: "Overview of your Projects and Tasks.",
+      icon: "LayoutDashboard",
+    };
+  }
+
+  // ----------------------------
+  // Job Portal Section
+  // ----------------------------
+  if (path.startsWith("/jobs")) {
+    if (path === "/jobs") {
+      return {
+        title: "Dashboard",
+        description:
+          "Get a complete overview of recruitment performance, recent activity, and key hiring metrics.",
+        icon: "LayoutDashboard",
+      };
+    }
+    if (path === "/jobs/candidates") {
+      return {
+        title: "Candidates",
+        description:
+          "View, manage, and organize candidate profiles throughout the hiring process.",
+        icon: "Users",
+      };
+    }
+    if (path === "/jobs/application") {
+      return {
+        title: "Applications",
+        description:
+          "Track job applications, review statuses, and monitor applicant progress efficiently.",
+        icon: "FileCheck",
+      };
+    }
+    if (path === "/jobs/companys") {
+      return {
+        title: "Companies",
+        description:
+          "Manage partnered companies, client profiles, and organizational details.",
+        icon: "Building2",
+      };
+    }
+    if (path === "/jobs/jobs") {
+      return {
+        title: "Jobs",
+        description:
+          "Create, update, and monitor job postings along with their hiring status.",
+        icon: "Briefcase",
+      };
+    }
+    if (path === "/jobs/revenues") {
+      return {
+        title: "Revenue",
+        description:
+          "Analyze earnings, recruitment revenue streams, and financial performance insights.",
+        icon: "TrendingUp",
+      };
+    }
+    if (path === "/jobs/setting") {
+      return {
+        title: "Settings",
+        description:
+          "Configure portal preferences, permissions, and system-level configurations.",
+        icon: "Settings",
+      };
+    }
+    return {
+      title: "Job-Portal",
+      description:
+        "Get a complete overview of recruitment performance, recent activity, and key hiring metrics.",
+      icon: "LayoutDashboard",
+    };
+  }
+
+  // ----------------------------
+  // Other Pages (Admin / Common)
+  // ----------------------------
+  switch (path) {
+    case "/dashboard":
+      return {
+        title: "Admin Dashboard",
+        description: "Welcome back! Here's what's happening today.",
+        icon: "LayoutDashboard",
+      };
+    case "/attendances":
+      return {
+        title: "Attendance",
+        description:
+          role === "admin"
+            ? "Overview of all employees' attendance."
+            : "Your daily attendance record.",
+        icon: "Clock",
+      };
+    case "/leaves":
+      return {
+        title: "Leave Management",
+        description:
+          role === "admin"
+            ? "Manage employee leave requests & types."
+            : "Apply for leave and track your requests",
+        icon: "CalendarDays",
+      };
+    case "/departments":
+      return {
+        title: "Departments",
+        description: "Manage company departments and team structure.",
+        icon: "Briefcase",
+      };
+    case "/users":
+      return {
+        title: role === "super_admin" ? "Manage Admins" : "Manage Employees",
+        description:
+          role === "super_admin"
+            ? "Create and manage admin accounts."
+            : "Create and manage employee accounts.",
+        icon: "UsersIcon",
+      };
+    case "/expenses":
+      return {
+        title: "Expense",
+        description: "View and manage your own expenses.",
+        icon: "LayoutDashboard",
+      };
+    case "/payrolls":
+      return {
+        title: "Payroll Management",
+        description: "Manage employee salaries and generate payslips.",
+        icon: "Wallet",
+      };
+    case "/notifications":
+      return {
+        title: "Notifications",
+        description: "View recent alerts, updates, and system messages.",
+        icon: "Bell",
+      };
+    case "/reports":
+      return {
+        title: "Reports & Analytics",
+        description:
+          "Comprehensive insights into your organization's performance.",
+        icon: "BarChart3",
+      };
+    case "/setting":
+      return {
+        title: "Setting",
+        description: "Manage your account settings and preferences.",
+        icon: "SettingsIcon",
+      };
+    case "/companies":
+      return {
+        title: "Company",
+        description: "Manage your company's profile, settings, and overall structure.",
+        icon: "Building2",
+      };
+    default:
+      return {
+        title: "Admin Dashboard",
+        description: "Welcome back! Here's what's happening today.",
+        icon: "LayoutDashboard",
+      };
+  }
+};

@@ -19,6 +19,9 @@ import DeleteCard from "@/components/cards/DeleteCard";
 import { useNavigate } from "react-router-dom";
 import TaskForm from "./forms/TaskForm";
 import SubTaskForm from "./forms/SubTaskForm";
+import { useAppDispatch, useAppSelector } from "@/redux-toolkit/hooks/hook";
+import { getProjects } from "@/redux-toolkit/slice/task/projectSlice";
+import { getEmployeeList } from "@/redux-toolkit/slice/allPage/userSlice";
 
 type Priority = 'low' | 'medium' | 'high' | 'urgent';
 interface ProjectItem {
@@ -33,7 +36,7 @@ interface ProjectItem {
 const Project: React.FC = () => {
   const { toast } = useToast();
   const { user } = useAuth();
-  const [projects, setProjects] = useState<ProjectItem[]>([]);
+  // const [projects, setProjects] = useState<ProjectItem[]>([]);
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -53,9 +56,10 @@ const Project: React.FC = () => {
   const [taskListRefresh, setTaskListRefresh] = useState(false);
   const [subTaskListRefresh, setSubTaskListRefresh] = useState(false);
   const [projectId, setProjectId] = useState("");
-    const [employeeList, setEmployeeList] = useState<any[]>([]);
-  
-
+    // const [employeeList, setEmployeeList] = useState<any[]>([]);
+    const dispatch  = useAppDispatch();
+    const projects = useAppSelector((state) => state.project.projects);
+    const employeeList = useAppSelector((state) => state.user.employees);
   const navigate = useNavigate();
 
   const today = new Date();
@@ -74,7 +78,10 @@ const Project: React.FC = () => {
     const handleGetEmployees = async () => {
       try {
         const data = await getEmployees(user?.companyId?._id);
-        if (Array.isArray(data)) setEmployeeList(data);
+        if (Array.isArray(data)) {
+          // setEmployeeList(data)
+          dispatch(getEmployeeList(data));
+        };
       } catch (err: any) {
         toast({
           title: "Error",
@@ -84,8 +91,10 @@ const Project: React.FC = () => {
       }
     };
     useEffect(()=>{
-      handleGetEmployees();
-    }, [])
+      if(user?._id && employeeList?.length === 0){
+        handleGetEmployees();
+      }
+    }, [user?._id, employeeList?.length])
 
   const handleChangeStatus = async () => {
     let obj = { adminId: user?._id, companyId: user?.companyId?._id, projectId: selectedProject?._id, status: newStatus }
@@ -110,7 +119,8 @@ const Project: React.FC = () => {
       const res = await getProject(user?._id, user?.companyId?._id);
       console.log(res)
       if (res.status === 200) {
-        setProjects(res.data);
+        // setProjects(res.data);
+        dispatch(getProjects(res.data));
         setProjectListRefresh(false);
         setIsTaskStatusChangeModalOpen(false);
       }
@@ -121,8 +131,10 @@ const Project: React.FC = () => {
     }
   };
   useEffect(() => {
+    if(user?._id && (projects?.length === 0 || projectListRefresh)){
     handleGetProject();
-  }, [projectListRefresh])
+    }
+  }, [projectListRefresh, projects?.length, user?._id]);
 
   const handleConfirmDelete = async () => {
     console.log(selectedProjectId, user?.companyId?._id, user?._id)

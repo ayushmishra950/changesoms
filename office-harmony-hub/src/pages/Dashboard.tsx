@@ -9,32 +9,17 @@ import { formatDate } from "@/services/allFunctions";
 import { Helmet } from "react-helmet-async";
 import { useNavigate } from 'react-router-dom';
 import CompanyList from "@/components/cards/CompanyCard";
+import { useAppDispatch, useAppSelector } from '@/redux-toolkit/hooks/hook';
+import { getDashboardData } from '@/redux-toolkit/slice/allPage/dashboardSlice';
 
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [dashboardData, setDashboardData] = useState(null);
+  // const [dashboardData, setDashboardData] = useState(null);
   const navigate = useNavigate();
-  // Define sidebar width (can match your sidebar open/close widths)
-const sidebarOpenWidth = 256; // px, 16rem
-const sidebarClosedWidth = 64; // px, 4rem
-
-// Suppose you know sidebar state from a parent or context
-const sidebarOpen = window.innerWidth > 1024 ? true : false; // simple default
-
-
-  const getRoleTitle = () => {
-    switch (user?.role) {
-      case 'super_admin':
-        return 'Super Admin Dashboard';
-      case 'admin':
-        return 'Admin Dashboard';
-      case 'employee':
-        return 'Employee Dashboard';
-      default:
-        return 'Dashboard';
-    }
-  };
+  const dashboardData = useAppSelector((state) => state.dashboard.dashboardData);
+  const dispatch = useAppDispatch();
+  const [pageLoading, setPageLoading] = useState(false);
 
   const getPriorityBadge = (priority: string) => {
     const styles: Record<string, string> = {
@@ -60,24 +45,38 @@ const sidebarOpen = window.innerWidth > 1024 ? true : false; // simple default
   const handleGetDashboard = async () => {
     if (user && user?.role === "super_admin") return;
       if (!user?._id || (!user?.companyId?._id && !user?.createdBy?._id)) return toast({ title: "Error", description: "required field Missing.", variant: "destructive" });
-
+ setPageLoading(true);
     try {
       const res = await getDashboardPage(user?._id, user?.companyId?._id || user?.createdBy?._id);
       console.log(res);
       if (res.status === 200) {
-        setDashboardData(res?.data?.summary)
+        // Dispatch action to update dashboard data in Redux store
+        dispatch(getDashboardData(res?.data?.summary));
       }
     }
     catch (err) {
       console.log(err);
       toast({ title: "Error", description: err?.response?.data?.message || err?.message, variant: "destructive" })
     }
+    finally{
+      setPageLoading(false);
+    }
   };
 
   useEffect(() => {
-    handleGetDashboard()
-  }, [])
-  console.log(dashboardData)
+    if((user && user?.role !== "super_admin") && Object.keys(dashboardData).length === 0){
+      handleGetDashboard();
+    }
+  }, [dashboardData, user])
+
+
+  if (pageLoading && (Object.keys(dashboardData).length === 0)) {
+  return (
+    <div className="flex items-center justify-center h-screen">
+      <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-primary"></div>
+    </div>
+  );
+}
 
   return (
     <>
@@ -214,7 +213,7 @@ const sidebarOpen = window.innerWidth > 1024 ? true : false; // simple default
             <CardContent>
               <div className="space-y-4">
                 {
-                  dashboardData?.recentActivity.length === 0 ?
+                  dashboardData?.recentActivity?.length === 0 ?
                     <>
                       <div className="flex items-center mt-6 justify-center h-full text-center text-muted-foreground">
                         No Recent Activity.

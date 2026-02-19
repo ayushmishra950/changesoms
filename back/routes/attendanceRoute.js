@@ -4,7 +4,8 @@ const attendanceController = require("../controllers/attendanceController");
 // const { authMiddleware } = require("../middlewares/auth");
 
 // Get attendance (Admin: all, Employee: self)
-router.get("/",  attendanceController.getAttendance);
+router.get("/", attendanceController.getAttendance);
+router.get("/attendancebyid", attendanceController.getAttendanceById);
 
 // Clock In (Employee only)
 router.post("/clock-in/:userId", attendanceController.clockIn);

@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { CalendarDays, Plus, CheckCircle2, XCircle, Clock, Calendar,ArrowLeft, FileText, Pencil, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -14,6 +14,8 @@ import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
 import { useNotifications } from '@/contexts/NotificationContext';
 import {formatDate} from "@/services/allFunctions";
 import { Helmet } from "react-helmet-async";
+import {getLeaveTypes, getLeaveRequests} from "@/redux-toolkit/slice/allPage/leaveSlice";
+import { useAppDispatch, useAppSelector } from '@/redux-toolkit/hooks/hook';
 
 const Leave: React.FC = () => {
   const { user } = useAuth();
@@ -24,30 +26,41 @@ const Leave: React.FC = () => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [selectedLeaveTypeId, setSelectedLeaveTypeId] = useState(null);
-  const [leaveTypes, setLeaveTypes] = useState([]);
-  const [allLeaveRequests, setAllLeaveRequests] = useState([]);
+  // const [leaveTypes, setLeaveTypes] = useState([]);
+  // const [allLeaveRequests, setAllLeaveRequests] = useState([]);
   const [leaveTypeRefresh, setLeaveTypeRefresh] = useState(false);
   const [initialData, setInitialData] = useState(null);
   const [mode, setMode] = useState(false);
    const { notifications, markAsRead, deleteNotification } = useNotifications();
-
+   const [allLeaveRequestRefresh, setAllLeaveRequestRefresh] = useState(false); 
+   const dispatch = useAppDispatch();
+   const leaveTypes = useAppSelector((state) => state.leave.leaveTypes);
+   const allLeaveRequests = useAppSelector((state) => state.leave.leaveRequests);
+    const [pageLoading, setPageLoading] = useState(false);
+  
   const handleGetleaveTypes = async () => {
     try {
+      setPageLoading(true);
       const response = await getleaveTypes(user?.role === "employee"?user?.createdBy?._id : user?.companyId?._id);
       console.log(response)
       if (response.status === 200) {
-        setLeaveTypes(response?.data?.leaves);
+        // setLeaveTypes(response?.data?.leaves);
+        dispatch(getLeaveTypes(response?.data?.leaves));
         setLeaveTypeRefresh(false);
       }
     } catch (error) {
       console.error(error);
       toast({ title: "Error", description: error?.response?.data?.message || "Something went wrong" });
     }
+    finally{
+      setPageLoading(false);
+    }
   };
 
   const handleGetleaveRequests = async () => {
     try {
       let response = null;
+      setPageLoading(true);
         if(user?.role === "admin"){
         response = await getleaveRequests(user?.companyId?._id);
         }
@@ -56,21 +69,46 @@ const Leave: React.FC = () => {
         }
         console.log(response)
       if (response.status === 200) {
-        setAllLeaveRequests(response?.data?.requests);
+        // setAllLeaveRequests(response?.data?.requests);
+       dispatch(getLeaveRequests(response?.data?.requests));
+       setAllLeaveRequestRefresh(false);
 
       }
     } catch (error) {
       console.error(error);
       toast({ title: "Error", description: error?.response?.data?.message || "Something went wrong" });
     }
+    finally{
+      setPageLoading(false);
+    }
   };
 
-  useEffect(() => {
-    handleGetleaveRequests();
-    if (leaveTypeRefresh || leaveTypes.length === 0) {
-      handleGetleaveTypes();
-    }
-  }, [leaveTypeRefresh, notifications]);
+  // useEffect(() => {
+  //   handleGetleaveRequests();
+  //   if (user?._id &&(leaveTypeRefresh || leaveTypes.length === 0)) {
+  //     handleGetleaveTypes();
+  //   }
+  // }, [leaveTypeRefresh, notifications]);
+
+
+  const lastNotificationCount = useRef(notifications?.length || 0);
+
+useEffect(() => {
+  // Always fetch leave requests
+    const shouldFetchLeaveRequests = user?._id && (allLeaveRequestRefresh || allLeaveRequests.length === 0 || notifications?.length > lastNotificationCount.current);
+     if(shouldFetchLeaveRequests){
+ handleGetleaveRequests();
+     }
+ 
+
+  const shouldFetchLeaveTypes = user?._id && (leaveTypeRefresh || leaveTypes.length === 0 || notifications?.length > lastNotificationCount.current);
+  if (shouldFetchLeaveTypes) {
+    handleGetleaveTypes();
+    // Update last seen notifications count
+    lastNotificationCount.current = notifications?.length || 0;
+  }
+}, [user?._id, leaveTypeRefresh,allLeaveRequests.length, allLeaveRequestRefresh, leaveTypes.length, notifications?.length]);
+
 
   const handleDeleteClick = (leaveTypeId) => {
     setSelectedLeaveTypeId(leaveTypeId);
@@ -107,7 +145,7 @@ const Leave: React.FC = () => {
       const response = await leaveStatusChange(newStatus, request, user?.companyId?._id, user?._id );
       console.log("Status Change Response:", response);
       if (response.status === 200) {
-        handleGetleaveRequests();
+              setAllLeaveRequestRefresh(true);
         toast({
           title: "Leave Request Updated",
           description: `Leave request has been ${newStatus.toLowerCase()} successfully.`,
@@ -149,6 +187,15 @@ const Leave: React.FC = () => {
 
   let remainingLeaves = Math.max( totalLeaves - usedLeaves, 0 );
 
+
+   if (pageLoading && (leaveTypes.length === 0 || allLeaveRequests.length === 0)) {
+  return (
+    <div className="flex items-center justify-center h-screen">
+      <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-primary"></div>
+    </div>
+  );
+}
+
   return (
     <>
     <Helmet>
@@ -176,7 +223,7 @@ const Leave: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end md:mt-[-15px] gap-4">
         <div className="flex flex-wrap gap-3">
           {user?.role === 'employee' && (
-            <ApplyLeaveDialog open={isDialogOpen} onOpenChange={setIsDialogOpen} setLeaveTypeRefresh={setLeaveTypeRefresh} initialData={initialData} mode={mode} />
+            <ApplyLeaveDialog open={isDialogOpen} onOpenChange={setIsDialogOpen} setLeaveTypeRefresh={setAllLeaveRequestRefresh} initialData={initialData} mode={mode} />
           )}
 
           {isAdmin && (

@@ -160,6 +160,67 @@ const getMyLeaveRequests = async (req, res) => {
     });
   }
 };
+const getMyLeaveRequestsByDate = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { companyId, month, year } = req.query;
+
+    // Validate IDs
+    if (
+      !mongoose.Types.ObjectId.isValid(userId) ||
+      !mongoose.Types.ObjectId.isValid(companyId)
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid user or company ID",
+      });
+    }
+
+    // Validate month/year
+    const monthNum = parseInt(month, 10);
+    const yearNum = parseInt(year, 10);
+
+    if (
+      !monthNum ||
+      monthNum < 1 ||
+      monthNum > 12 ||
+      !yearNum ||
+      yearNum < 1970
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid month or year",
+      });
+    }
+
+    // Calculate start and end of the month
+    const startDate = new Date(yearNum, monthNum - 1, 1); // month is 0-indexed
+    const endDate = new Date(yearNum, monthNum, 0, 23, 59, 59, 999); // last day of month
+
+    // Query LeaveRequests for that month
+    const requests = await LeaveRequest.find({
+      user: userId,
+      createdBy: companyId,
+      fromDate: { $gte: startDate },
+      toDate: { $lte: endDate },
+    })
+      .populate("leaveType", "name paid")
+      .populate("user", "fullName email profileImage")
+      .sort({ createdAt: -1 });
+
+    return res.status(200).json({
+      success: true,
+      count: requests.length,
+      requests,
+    });
+  } catch (error) {
+    console.error("Get My Leaves Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
 
 /**
  * GET ALL LEAVE REQUESTS (Admin / Company)
@@ -364,4 +425,5 @@ module.exports = {
   getLeaveRequestById,
   updateLeaveStatus,
   deleteLeaveRequest,
+  getMyLeaveRequestsByDate
 };

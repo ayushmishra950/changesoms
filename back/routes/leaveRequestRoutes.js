@@ -8,6 +8,7 @@ const {
   getLeaveRequestById,
   updateLeaveStatus,
   deleteLeaveRequest,
+  getMyLeaveRequestsByDate
 } = require("../controllers/leaveRequestController");
 
 // const { auth, isAdmin } = require("../middlewares/authMiddleware");
@@ -105,6 +106,7 @@ router.get("/:companyId",  getAllLeaveRequests);
  *         description: Leave request details
  */
 router.get("/:id",  getLeaveRequestById);
+router.get("/my/:userId/date",  getMyLeaveRequestsByDate);
 
 /**
  * @swagger

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -23,6 +23,8 @@ import axios from "axios";
 import { useToast } from "@/components/ui/use-toast";
 import { getleaveTypes } from "@/services/Service";
 import { useAuth } from "@/contexts/AuthContext";
+import { useAppDispatch, useAppSelector } from "@/redux-toolkit/hooks/hook";
+import { getLeaveTypes } from "@/redux-toolkit/slice/allPage/leaveSlice";
 
 const ApplyLeaveDialog = ({
   open,
@@ -34,7 +36,7 @@ const ApplyLeaveDialog = ({
   const { user } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-  const [leaveTypes, setLeaveTypes] = useState([]);
+  // const [leaveTypes, setLeaveTypes] = useState([]);
   const [obj, setObj] = useState({
     leaveType: "",
     fromDate: "",
@@ -44,6 +46,21 @@ const ApplyLeaveDialog = ({
     companyId: user?.createdBy?._id
   });
   const today = new Date().toISOString().split("T")[0];
+  const startDateRef = useRef(null);
+  const endDateRef = useRef(null);
+  const dispatch = useAppDispatch();
+  const leaveTypes = useAppSelector((state) => state.leave.leaveTypes);
+
+  const resetForm = () => {
+    setObj({
+      leaveType: "",
+      fromDate: "",
+      toDate: "",
+      description: "",
+      userId: user?._id,
+      companyId: user?.createdBy?._id
+    });
+  };
 
   /* =======================
      Prefill in Edit Mode
@@ -68,15 +85,18 @@ const ApplyLeaveDialog = ({
     try {
       const res = await getleaveTypes(user?.createdBy?._id);
       console.log("Leave Types:", res.data);
-      setLeaveTypes(Array.isArray(res?.data?.leaves) ? res?.data?.leaves : []);
+      dispatch(getLeaveTypes(Array.isArray(res?.data?.leaves) ? res?.data?.leaves : []));
+      // setLeaveTypes(Array.isArray(res?.data?.leaves) ? res?.data?.leaves : []);
     }
     catch (err) {
       console.log(err)
     }
   }
   useEffect(() => {
+    if(user?.createdBy?._id && leaveTypes?.length === 0){
     handleGetLeaveType();
-  }, []);
+    }
+  }, [user?.createdBy?._id, leaveTypes?.length]);
 
   /* =======================
         Submit Handler
@@ -109,6 +129,7 @@ const ApplyLeaveDialog = ({
       });
 
       setLeaveTypeRefresh(true);
+      resetForm();
       onOpenChange(false);
     } catch (err) {
       console.error(err);
@@ -123,7 +144,7 @@ const ApplyLeaveDialog = ({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(open)=>{resetForm(); onOpenChange(open)}}>
       {/* Trigger Button (only in create mode usually) */}
 
       <DialogTrigger asChild>
@@ -183,20 +204,24 @@ const ApplyLeaveDialog = ({
               <Label>Start Date</Label>
               <Input
                 type="date"
+                ref={startDateRef}
                 value={obj.fromDate}
                 min={today}   // 🔴 past disable
                 onChange={(e) => handleChange("fromDate", e.target.value)}
                 required
+                onClick={()=> {if(startDateRef.current?.showPicker){startDateRef.current?.showPicker()}}}
               />
             </div>
             <div className="space-y-2">
               <Label>End Date</Label>
               <Input
                 type="date"
+                ref={endDateRef}
                 value={obj.toDate}
-                min={today}   // 🔴 past disable
+                min={obj?.fromDate || today}   // 🔴 past disable
                 onChange={(e) => handleChange("toDate", e.target.value)}
                 required
+                 onClick={()=> {if(endDateRef.current?.showPicker){endDateRef.current?.showPicker()}}}
               />
             </div>
           </div>
@@ -218,7 +243,7 @@ const ApplyLeaveDialog = ({
             <Button
               type="button"
               variant="outline"
-              onClick={() => onOpenChange(false)}
+              onClick={() => {resetForm(); onOpenChange(false);}}
             >
               Cancel
             </Button>

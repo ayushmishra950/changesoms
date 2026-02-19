@@ -1,15 +1,16 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import RelieveEmployeeCard from "@/components/cards/RelieveEmployeeCard";
 import { EmployeeFormDialog } from "@/Forms/EmployeeFormDialog";
-import { getEmployeebyId, handleGetPdfLetter, handleAddPdfLetter as addPdfLetterApi, getSinglePayRoll } from "@/services/Service";
+import { getEmployeebyId, handleGetPdfLetter, getAttendanceById, getSingleleaveRequestsByDate, handleAddPdfLetter as addPdfLetterApi, getSinglePayRoll } from "@/services/Service";
 import { useParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import {ArrowLeft} from "lucide-react";
-import {getStatusColorfromEmployee, getEventColor, formatDate} from "@/services/allFunctions";
-import {Helmet} from "react-helmet-async";
+import { ArrowLeft } from "lucide-react";
+import { getStatusColorfromEmployee, getEventColor, formatDate,formatClock, getCurrentMonthAndYear } from "@/services/allFunctions";
+import { Helmet } from "react-helmet-async";
 import SalarySlipCard from '@/components/cards/SalarySlipCard';
+import { cn } from '@/lib/utils';
 
 const dummyLetters = [
   {
@@ -17,6 +18,7 @@ const dummyLetters = [
     pdfData: btoa("Dummy PDF Data")
   }
 ];
+
 
 const EmployeeDashboard = () => {
   const { toast } = useToast();
@@ -34,14 +36,76 @@ const EmployeeDashboard = () => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [employeeListRefresh, setEmployeeListRefresh] = useState(false);
   const [singlePayrolls, setSinglePayrolls] = useState<any[]>([]);
-    const [pdfOpenForm, setPdfOpenForm] = useState(false);
-
+  const [pdfOpenForm, setPdfOpenForm] = useState(false);
+  const [attendanceList, setAttendanceList] = useState<any[]>([]);
+  const [leaveList, setLeaveList] = useState<any[]>([]);
+  const [selectedDate, setSelectedDate] = useState(getCurrentMonthAndYear());
+  const [leaveSelectedDate, setLeaveSelectedDate] = useState(getCurrentMonthAndYear()); 
   const { id } = useParams();
-  const {user} = useAuth();
+  const { user } = useAuth();
+  const attendanceDateRef = useRef(null);
+  const leaveDateRef = useRef(null);
 
-  const showSalarySlip = async() =>{
-    if(!singlePayrolls || singlePayrolls.length === 0) return toast({title:"Slip Error", description:"Salary Slip Not Found.", variant:"destructive"})
-        setPdfOpenForm(true);
+  const companyId = user?.companyId?._id;
+
+  // ================= Fetch Attendance =================
+  const fetchAttendances = async (date: string) => {
+    try {
+      const selected = new Date(date);
+      const month = selected.getMonth() + 1; // JS months = 0–11
+      const year = selected.getFullYear();
+
+      if (!month || !year || !companyId) return;
+
+      const res = await getAttendanceById(id, month, year, companyId);
+      console.log(res?.data?.records)
+      if (Array.isArray(res?.data?.records)) {
+        let data = res?.data?.records?.filter((item: any) => item?.userId?._id === id);
+        setAttendanceList(data);
+      }
+    } catch (err: any) {
+      console.log(err);
+      toast({
+        title: "Error",
+        description:
+          err?.response?.data?.error || "Something went wrong",
+      });
+    }
+  };
+
+
+  // ================= Fetch Attendance =================
+  const handleGetLeaveData = async (date: string) => {
+    try {
+            const selected = new Date(date);
+      const month = selected.getMonth() + 1; // JS months = 0–11
+      const year = selected.getFullYear();
+      if (!id) return;
+
+      const res = await getSingleleaveRequestsByDate(id, companyId, month, year);
+      console.log(res);
+      if (Array.isArray(res?.data?.requests)) {
+        setLeaveList(res.data.requests);
+      }
+    } catch (err: any) {
+      console.log(err);
+      toast({
+        title: "Error",
+        description:
+          err?.response?.data?.error || "Something went wrong",
+      });
+    }
+  };
+  useEffect(() => {
+    if (user?.companyId?._id) {
+      fetchAttendances(selectedDate);
+      handleGetLeaveData(leaveSelectedDate);
+    }
+  }, [user, selectedDate, leaveSelectedDate]);
+
+  const showSalarySlip = async () => {
+    if (!singlePayrolls || singlePayrolls.length === 0) return toast({ title: "Slip Error", description: "Salary Slip Not Found.", variant: "destructive" })
+    setPdfOpenForm(true);
   }
 
   const handleGetEmployee = async () => {
@@ -51,7 +115,7 @@ const EmployeeDashboard = () => {
       if (data) {
         setSingleUserData(data.employee || null);
         setHistory(data.history || []);
-        setTasks(data?.task || []) 
+        setTasks(data?.task || [])
       } else {
         setSingleUserData(null);
         setHistory([]);
@@ -116,27 +180,27 @@ const EmployeeDashboard = () => {
     }
   };
 
-  
-    const handleGetSinglePayRoll = async () => {
-       if(!id || !user?.companyId?._id) return;
-      try {
-        const data = await getSinglePayRoll(id, user?.companyId?._id);
-        console.log("Single Payroll:", data);
-        if (Array.isArray(data)) {
-          setSinglePayrolls(data);
-        }
-      } catch (error) {
-        console.error("Error fetching all payrolls:", error);
+
+  const handleGetSinglePayRoll = async () => {
+    if (!id || !user?.companyId?._id) return;
+    try {
+      const data = await getSinglePayRoll(id, user?.companyId?._id);
+      console.log("Single Payroll:", data);
+      if (Array.isArray(data)) {
+        setSinglePayrolls(data);
       }
-    };
-  
-    useEffect(() => {
-      if (!user) return; // agar user null ho to kuch na kare
-  
-      if (user.role === 'admin') {
-        handleGetSinglePayRoll();
-      }
-    }, [user]);
+    } catch (error) {
+      console.error("Error fetching all payrolls:", error);
+    }
+  };
+
+  useEffect(() => {
+    if (!user) return; // agar user null ho to kuch na kare
+
+    if (user.role === 'admin') {
+      handleGetSinglePayRoll();
+    }
+  }, [user]);
 
   useEffect(() => {
     if (employeeListRefresh) {
@@ -152,19 +216,11 @@ const EmployeeDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
-        <Helmet>
-              <title>Employe Detail Page</title>
-              <meta name="description" content="This is the home page of our app" />
-            </Helmet>
-         <div className="md:mt-[-20px] md:mb-[5px]">
-        <button
-          onClick={() => window.history.back()}
-          className="p-2 bg-gray-200 dark:bg-gray-700 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors flex items-center justify-center"
-        >
-          <ArrowLeft className="w-5 h-5 text-gray-800 dark:text-white" />
-        </button>
-      </div>
-            {pdfOpenForm && <SalarySlipCard data={singlePayrolls} onClose={() => setPdfOpenForm(false)} />}
+      <Helmet>
+        <title>Employe Detail Page</title>
+        <meta name="description" content="This is the home page of our app" />
+      </Helmet>
+      {pdfOpenForm && <SalarySlipCard data={singlePayrolls} onClose={() => setPdfOpenForm(false)} />}
       {/* Top Navbar / Header */}
       <header className="bg-white dark:bg-gray-900 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
@@ -297,9 +353,9 @@ const EmployeeDashboard = () => {
                 {/* Keep the last three buttons as-is */}
                 <button
                   className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition"
-                    onClick={() => {
-                                showSalarySlip();
-                              }}
+                  onClick={() => {
+                    showSalarySlip();
+                  }}
                 >
                   All Salary Slips
                 </button>
@@ -311,7 +367,7 @@ const EmployeeDashboard = () => {
                 </button>
                 <button
                   disabled={singleUserData?.status === "RELIEVED"}
-                  onClick={() => {setRelieveEmployeeId(singleUserData?._id); setShowRelieve(true);}}
+                  onClick={() => { setRelieveEmployeeId(singleUserData?._id); setShowRelieve(true); }}
                   className={`
                     px-4 py-2 text-white rounded-lg text-sm font-medium transition
                     ${singleUserData?.status === "RELIEVED"
@@ -522,6 +578,105 @@ const EmployeeDashboard = () => {
                 </div>
               )}
             </div>
+            {/* Attendance History */}
+            <div className="bg-white dark:bg-gray-900 rounded-xl shadow-md p-6">
+            <div className='flex flex-row justify-between'>
+               <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+                Attendance History
+              </h2>
+              <input type='month' value={selectedDate} onChange={(e)=> setSelectedDate(e.target.value)} className='w-22 h-6 border text-sm border-gray-500 rounded-md'/>
+            </div>
+              {attendanceList && attendanceList.length > 0 ? (
+                <ul className="space-y-2 max-h-[400px] overflow-y-auto pr-2 remarks-scroll">
+                  {attendanceList.map((attendance, i) => {
+                    return (
+                      <li
+                        key={i}
+                        className="text-gray-700 dark:text-gray-300 flex flex-col sm:flex-row sm:items-center justify-between"
+                      >
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={cn(
+                              "mr-2",
+                              attendance.status === "Clock In"
+                                ? "text-green-500"
+                                : attendance.status === "Clock Out"
+                                  ? "text-red-500"
+                                  : "text-gray-400"
+                            )}
+                          >
+                            •
+                          </span>
+                          <span className="font-medium">{attendance.status}</span>
+                        </div>
+                        <div className="text-sm text-gray-500 dark:text-gray-400">
+                          {formatDate(attendance.date)}{" "} {formatClock(attendance?.clockIn)} - {formatClock(attendance?.clockOut)}
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              ) : (
+                <div className="flex items-center justify-center h-[120px] text-sm text-gray-500 dark:text-gray-400">
+                  No attendance available
+                </div>
+              )}
+            </div>
+
+            {/* Leave History */}
+          <div className="bg-white dark:bg-gray-900 rounded-xl shadow-md p-6">
+            <div className='flex flex-row justify-between'>
+ <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+    Leave History
+  </h2>
+  <input type='month' value={leaveSelectedDate} onChange={(e)=> setLeaveSelectedDate(e.target.value)} className='w-22 h-6 border text-sm border-gray-500 rounded-md'/>
+            </div>
+ 
+
+  {Array.isArray(leaveList) && leaveList.length > 0 ? (
+    <ul className="space-y-4 max-h-[400px] overflow-y-auto pr-2 remarks-scroll">
+      {leaveList.map((leave) => {
+        const from = new Date(leave.fromDate).toLocaleDateString(); // format as per locale
+        const to = new Date(leave.toDate).toLocaleDateString();
+
+        return (
+          <li
+            key={leave._id}
+            className="bg-gray-50 dark:bg-gray-800 p-4 rounded-md flex flex-col space-y-1 shadow-sm"
+          >
+            <div className="flex justify-between items-center">
+              <span className="font-semibold text-gray-900 dark:text-white">
+                {leave.leaveType?.name || "N/A"}
+              </span>
+              <span
+                className={`text-sm font-medium ${
+                  leave.status === "Approved"
+                    ? "text-green-500"
+                    : leave.status === "Rejected"
+                    ? "text-red-500"
+                    : "text-yellow-500"
+                }`}
+              >
+                {leave.status}
+              </span>
+            </div>
+            <div className="text-gray-700 dark:text-gray-300 text-sm">
+              {leave.description}
+            </div>
+            <div className="text-gray-500 dark:text-gray-400 text-sm">
+              {from} - {to} ({leave.totalDays} {leave.totalDays > 1 ? "days" : "day"})
+            </div>
+          </li>
+        );
+      })}
+    </ul>
+  ) : (
+    <div className="flex items-center justify-center h-[120px] text-sm text-gray-500 dark:text-gray-400">
+      No leaves available
+    </div>
+  )}
+</div>
+
             {/* Remarks */}
             <div className="bg-white dark:bg-gray-900 rounded-xl shadow-md p-6">
               <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">

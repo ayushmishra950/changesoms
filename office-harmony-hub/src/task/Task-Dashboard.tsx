@@ -9,18 +9,22 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { formatDate, getStatusColor, getPriorityColor, getTaskCountByStatus, getOverdueTasks } from "@/services/allFunctions";
 import { Helmet } from "react-helmet-async";
+import { useAppDispatch, useAppSelector } from "@/redux-toolkit/hooks/hook";
+import { getTaskDashboard } from "@/redux-toolkit/slice/task/dashboardSlice";
 
 const TaskDashboard: React.FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [userData, setUserData] = useState(null);
+  // const [userData, setUserData] = useState(null);
+  const dispatch = useAppDispatch();
+  const userData = useAppSelector((state) => state?.taskDashboard?.taskDashboard);
   
   const handleGetData = async () => {
     try {
       if (!user?._id || (!user?.companyId?._id && !user?.createdBy?._id)) return;
       const res = await getDashboardData(user?._id, user?.companyId?._id || user?.createdBy?._id);
       if (res.status === 200) {
-        setUserData(res?.data?.summary);
+        dispatch(getTaskDashboard(res?.data?.summary));
       }
     }
     catch (err) {
@@ -29,8 +33,10 @@ const TaskDashboard: React.FC = () => {
     }
   }
   useEffect(() => {
-    handleGetData()
-  }, [])
+    if(user?._id && ( !userData || Object.keys(userData).length === 0)){
+      handleGetData();
+    }
+  }, [user?._id, userData]);
 
   return (
     <>

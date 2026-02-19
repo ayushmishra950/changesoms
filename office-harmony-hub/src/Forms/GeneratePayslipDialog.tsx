@@ -20,6 +20,8 @@ import { addPayRoll, getEmployees, getEmployeebyId } from "@/services/Service";
 import { Loader2 } from "lucide-react";
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from "@/contexts/AuthContext";
+import { useAppDispatch, useAppSelector } from "@/redux-toolkit/hooks/hook";
+import { getEmployeeList } from "@/redux-toolkit/slice/allPage/userSlice";
 
 
 const months = [
@@ -47,7 +49,7 @@ export default function GeneratePayslipDialog({
 }) {
     const { user } = useAuth();
   const { toast } = useToast();
-  const [employees, setEmployees] = useState([]);
+  // const [employees, setEmployees] = useState([]);
   const [obj, setObj] = useState({
     employeeId: '',
     month: '',
@@ -59,9 +61,15 @@ export default function GeneratePayslipDialog({
   })
   const [loading, setLoading] = useState(false);
   const isEditMode = Boolean(initialData);
+  const dispatch = useAppDispatch();
+  const employees = useAppSelector((state) => state.user.employees);
 
   useEffect(() => {
-    handleGetEmployees();
+     if(user?.role === "admin" && employees.length === 0){
+      handleGetEmployees();
+     }
+  },[user?._id, user?.companyId?._id, employees.length]);
+  useEffect(() => {
     if (initialData) {
       setObj({
         employeeId: initialData.employeeId || '',
@@ -104,7 +112,8 @@ export default function GeneratePayslipDialog({
        }
       console.log("employee Data:", data);
       if (Array.isArray(data)) {
-        setEmployees(data);
+        // setEmployees(data);
+        dispatch(getEmployeeList(data));
       }
     } catch (err) {
       console.log(err);

@@ -1131,6 +1131,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { formatDateFromInput } from "@/services/allFunctions";
 import DepartmentDialog from "@/Forms/DepartmentDialog";
 import {EmployeeFormDialogProps, EmployeeDepartment} from "@/types/index";
+import { useAppDispatch, useAppSelector } from "@/redux-toolkit/hooks/hook";
+import { getDepartment } from "@/redux-toolkit/slice/allPage/departmentSlice";
 
 export const EmployeeFormDialog: React.FC<EmployeeFormDialogProps> = ({
   open,
@@ -1145,7 +1147,7 @@ export const EmployeeFormDialog: React.FC<EmployeeFormDialogProps> = ({
 
   const [formStep, setFormStep] = useState(1);
   const [currentEmployee, setCurrentEmployee] = useState<any>(null);
-  const [categories, setCategories] = useState<EmployeeDepartment[]>([]);
+  // const [categories, setCategories] = useState<EmployeeDepartment[]>([]);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showScrollIndicator, setShowScrollIndicator] = useState(false);
@@ -1169,6 +1171,8 @@ export const EmployeeFormDialog: React.FC<EmployeeFormDialogProps> = ({
   const dateRef = useRef(null);
   const formRef = useRef(null);
     const [showArrow, setShowArrow] = useState(true);
+    const dispatch = useAppDispatch();
+    const categories = useAppSelector((state) => state.department.departments);
   
     const handleScroll = () => {
       const el = formRef.current;
@@ -1186,7 +1190,8 @@ export const EmployeeFormDialog: React.FC<EmployeeFormDialogProps> = ({
   const handleGetDepartment = async () => {
     try {
       const data = await getDepartments(user?.companyId?._id);
-      setCategories(data || []);
+      // setCategories(data || []);
+        dispatch(getDepartment(data || []));
       setDepartmentRefresh(false);
     } catch (err: any) {
       console.error("Error fetching departments:", err);
@@ -1215,7 +1220,7 @@ export const EmployeeFormDialog: React.FC<EmployeeFormDialogProps> = ({
   }, [initialData]);
 
   useEffect(() => {
-    if (user?.role === "admin") {
+    if (user?.role === "admin" && (categories.length === 0 || departmentRefresh)) {
       handleGetDepartment();
     }
   }, [user, departmentRefresh]);
@@ -1628,7 +1633,7 @@ export const EmployeeFormDialog: React.FC<EmployeeFormDialogProps> = ({
                  
                     {/* Profile Image */}
                     <div className="space-y-1.5">
-                      <Label className="text-sm font-medium">Profile Image </Label>
+                      <Label className="text-sm font-medium">Profile Image (Optional)</Label>
                       <Input
                         type="file"
                         accept="image/*"
@@ -1710,7 +1715,7 @@ export const EmployeeFormDialog: React.FC<EmployeeFormDialogProps> = ({
 
                   {/* Role & Responsibilities */}
                   <div className="space-y-1.5">
-                    <Label className="text-sm font-medium">Role & Responsibilities </Label>
+                    <Label className="text-sm font-medium">Role & Responsibilities (Optional)</Label>
                     <textarea
                       rows={3}
                       className="w-full border rounded-md p-2.5 text-sm resize-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -1736,7 +1741,7 @@ export const EmployeeFormDialog: React.FC<EmployeeFormDialogProps> = ({
 
                   {/* Documents */}
                   <div className="space-y-3">
-                    <Label className="text-sm font-medium block">Documents</Label>
+                    <Label className="text-sm font-medium block">Documents (Optional)</Label>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <FileInput
                         label="Salary Slip"
@@ -1775,7 +1780,7 @@ export const EmployeeFormDialog: React.FC<EmployeeFormDialogProps> = ({
 
                   {/* Remark */}
                   <div className="space-y-1.5">
-                    <Label className="text-sm font-medium">Remark </Label>
+                    <Label className="text-sm font-medium">Remark (Optional)</Label>
                     <textarea
                       rows={3}
                       className="w-full border rounded-md p-2.5 text-sm resize-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"

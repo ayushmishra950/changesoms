@@ -1,7 +1,7 @@
 
 const express = require("express");
 const { registerAdmin, updateAdmin, deleteAdmin, loginAdmin,getUserById, updateUser,changePassword,
-  getAllAdmins, adminStatusChange,refresh, getDashboardSummary, analyticsReport, getNotificationData, deleteNotifications, deleteAllNotifications } = require("../controllers/authController");
+  getAllAdmins, adminStatusChange,refresh,getUserWeeklyAttendanceReport, getDashboardSummary, analyticsReport, getNotificationData, deleteNotifications, deleteAllNotifications } = require("../controllers/authController");
 
 const router = express.Router();
 
@@ -96,6 +96,7 @@ router.get("/notification", getNotificationData);
 router.delete("/notification/delete", deleteNotifications);
 router.delete("/notification/alldelete", deleteAllNotifications);
 router.put("/admin/status", adminStatusChange);
+router.get("/weekly-attendance-report", getUserWeeklyAttendanceReport);
 
 
 

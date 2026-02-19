@@ -11,6 +11,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import axios from "axios";
 import { getTaskManager, deleteTaskManager } from "@/services/Service";
+import { useAppDispatch, useAppSelector } from "@/redux-toolkit/hooks/hook";
+import { getManagers } from "@/redux-toolkit/slice/task/taskManagerSlice";
 
 
 interface ManagerItem {
@@ -23,7 +25,7 @@ interface ManagerItem {
 }
 
 const TaskManager: React.FC = () => {
-    const [managers, setManagers] = useState<ManagerItem[]>([]);
+    // const [managers, setManagers] = useState<ManagerItem[]>([]);
     const { toast } = useToast();
     const { user } = useAuth();
     const [search, setSearch] = useState("");
@@ -33,6 +35,8 @@ const TaskManager: React.FC = () => {
     const [isDeleting, setIsDeleting] = useState(false);
     const [selectedManagerId, setSelectedManagerId] = useState(null);
     const [managerRefresh, setManagerRefresh] = useState(false);
+     const dispatch = useAppDispatch();
+      const managers = useAppSelector((state) => state.manager.managers);
     const filteredManagers = managers.filter(
         (m) =>
             m.fullName.toLowerCase().includes(search.toLowerCase()) ||
@@ -74,7 +78,7 @@ const TaskManager: React.FC = () => {
             const res = await getTaskManager(user?._id, user?.companyId?._id);
             console.log(res);
             if (res.status === 200) {
-                setManagers(res.data);
+                dispatch(getManagers(res.data));
                 setManagerRefresh(false);
             }
         }
@@ -85,8 +89,10 @@ const TaskManager: React.FC = () => {
     };
 
     useEffect(() => {
+        if(user?._id && (managers?.length === 0 || managerRefresh)){
         handleGetManager();
-    }, [managerRefresh])
+        }
+    }, [managerRefresh, user?._id, managers?.length]);
 
     return (
         <>

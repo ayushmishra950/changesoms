@@ -11,6 +11,8 @@ import { Separator } from '@/components/ui/separator';
 import { getSingleUser, updateUser, updatePassword } from "@/services/Service";
 import { useToast } from '@/hooks/use-toast';
 import { Helmet } from "react-helmet-async";
+import {getSetting} from "@/redux-toolkit/slice/allPage/settingSlice";
+import { useAppDispatch, useAppSelector } from '@/redux-toolkit/hooks/hook';
 
 export function formatDate(isoDate: string | null | undefined): string {
   if (!isoDate) return "-";
@@ -34,7 +36,7 @@ const Settings: React.FC = () => {
   const { user } = useAuth();
     const { toast } = useToast();
   
-  const [userData, setUserData] = useState<any>(null);
+  // const [userData, setUserData] = useState<any>(null);
   const [newPassword, setNewPassword] = useState(null);
   const [confirmPassword, setConfirmPassword] = useState(null);
    const [newPasswordShow, setNewPasswordShow] = useState(false);
@@ -48,37 +50,54 @@ const Settings: React.FC = () => {
     profileImage: "",
   });
 
-  // Fetch user on mount
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const res = await getSingleUser(user?._id, user?.role === "employee"? user?.createdBy?._id : user?.companyId?._id);
-        if (res.status === 200) {
-          setUserData(res.data.user);
-          if (user?.role === "admin" || user?.role === "super_admin") {
+  const dispatch = useAppDispatch();
+  const userData = useAppSelector((state) => state.setting.setting);
+  const [settingRefresh, setSettingRefresh] = useState(false);
+  const [pageLoading, setPageLoading] = useState(false);
+
+    useEffect(() => {
+ if (user?.role === "admin" || user?.role === "super_admin") {
             setFormData({
-              username: res.data.user.username || "",
-              mobile: res.data.user.mobile || "",
+              username: userData?.username || "",
+              mobile: userData?.mobile || "",
               fullName: "",
               contact: "",
-              profileImage: res.data.user.profileImage || "",
+              profileImage: userData?.profileImage || "",
             });
           } else {
             setFormData({
               username: "",
               mobile: "",
-              fullName: res.data.user.fullName || "",
-              contact: res.data.user.contact || "",
-              profileImage: res.data.user.profileImage || "",
+              fullName: userData?.fullName || "",
+              contact: userData?.contact || "",
+              profileImage: userData?.profileImage || "",
             });
           }
+    },[userData])
+
+     const fetchUser = async () => {
+      setPageLoading(true);
+      try {
+        const res = await getSingleUser(user?._id, user?.role === "employee"? user?.createdBy?._id : user?.companyId?._id);
+        if (res.status === 200) {
+         dispatch(getSetting(res.data.user));
+         setSettingRefresh(false);
         }
       } catch (err) {
         console.log(err);
+      } finally {
+        setPageLoading(false);
       }
     };
-    fetchUser();
-  }, [user]);
+  // Fetch user on mount
+  useEffect(() => {
+   
+    if (user && (userData === null || Object.keys(userData).length === 0 || settingRefresh)) {
+      fetchUser();
+    }
+  }, [user, settingRefresh]);
+
+
 
   // Generic input change handler
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -90,7 +109,7 @@ const Settings: React.FC = () => {
   const handleSave = async () => {
     try {
       let dataToSend: any = {};
-      if (user?.role === "admin") {
+      if (user?.role === "admin" || user?.role === "super_admin") {
         dataToSend = {
           username: formData.username,
           mobile: formData.mobile,
@@ -105,10 +124,10 @@ const Settings: React.FC = () => {
       }
 
       const res = await updateUser( user?._id, user?.role === "employee" ? user?.createdBy?._id : user?.companyId?._id, dataToSend );
-
+     
       if (res.status === 200) {
         toast({ title: `Profile Update Successfully.`, description: res?.data?.message });
-        setUserData(res.data.user);
+        setSettingRefresh(true);
       }
     } catch (err) {
       console.log(err);
@@ -137,6 +156,15 @@ const Settings: React.FC = () => {
      toast({ title: "Error", description: err?.response?.data?.message || "Something went wrong" });
     }
   }
+
+  
+   if (pageLoading && (userData === null || Object.keys(userData).length === 0)) {
+  return (
+    <div className="flex items-center justify-center h-screen">
+      <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-primary"></div>
+    </div>
+  );
+}
 
   return (
     <>

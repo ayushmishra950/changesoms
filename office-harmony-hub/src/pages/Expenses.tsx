@@ -14,6 +14,8 @@ import { getExpenseCategories, getExpenses, generatePDF } from "@/services/Servi
 import axios from 'axios';
 import { useAuth } from "@/contexts/AuthContext";
 import { Helmet } from "react-helmet-async";
+import { useAppDispatch, useAppSelector } from '@/redux-toolkit/hooks/hook';
+import { getExpense, getExpenseCategory } from '@/redux-toolkit/slice/allPage/expenseSlice';
 
 
 const months = Array.from({ length: 12 }, (_, i) => {
@@ -50,50 +52,65 @@ export default function Expenses() {
     const [isDeleting, setIsDeleting] = useState(false);
     const [selectedExpenseId, setSelectedExpenseId] = useState(null);
     const[initialData, setInitialData] = useState(null);
-    const [categoriesList, setCategoriesList] = useState([]);
+    // const [categoriesList, setCategoriesList] = useState([]);
     const [categoryListRefresh, setCategoryListRefersh] = useState(false);
   const [expenseListRefresh, setExpenseListRefresh] = useState(false);
-  const [expenseList, setExpenseList] = useState([]);
+  // const [expenseList, setExpenseList] = useState([]);
+  const dispatch = useAppDispatch();
+  const expenseList = useAppSelector((state) => state.expense.expenses);  
+  const categoriesList = useAppSelector((state) => state.expense.expenseCategory); 
+    const [pageLoading, setPageLoading] = useState(false);
+   
   const { toast } = useToast();
 
   const handleGetCategory = async() => {
+    setPageLoading(true);
     try {
     const res = await getExpenseCategories(user?.companyId?._id);
     if(res)
     {
-      setCategoriesList(res);  setCategoryListRefersh(false);
+      dispatch(getExpenseCategory(res));
+        setCategoryListRefersh(false);
     }
   } catch (err) {
     console.log("Error fetching categories:", err);
     toast({ title: "Error", description: "Failed to fetch categories", variant: "destructive"});
   }
+  finally{
+    setPageLoading(false);
+  }
   };
 
   const handleGetExpenses = async() => {
+    setPageLoading(true);
     try {
     const res = await getExpenses(user?.companyId?._id);
     console.log("Expenses Fetched:", res);
     if(res)
     {
-      setExpenseList(res);  setExpenseListRefresh(false);
+      dispatch(getExpense(res));
+      setExpenseListRefresh(false);
     }
   } catch (err) {
     console.log("Error fetching expenses:", err);
     toast({ title: "Error", description: "Failed to fetch expenses", variant: "destructive"});
   }
+  finally{
+    setPageLoading(false);
+  }
   };
 
   useEffect(() => {
-    if(categoryListRefresh || categoriesList.length === 0){
+    if(user?.role === "admin" && (categoryListRefresh || categoriesList.length === 0)){
     handleGetCategory();
     }
-  }, [categoryListRefresh]);
+  }, [categoryListRefresh, categoriesList.length, user]);
 
   useEffect(() => {
-     if(expenseListRefresh || expenseList.length === 0){
+     if(user?.role === "admin" && (expenseListRefresh || expenseList.length === 0)){
     handleGetExpenses();
     }
-  }, [expenseListRefresh, expenseList.length]);
+  }, [expenseListRefresh, expenseList.length, user]);
 
   
   const handleDeleteClick = (expenseId) => {
@@ -174,6 +191,16 @@ export default function Expenses() {
     };
     return colors[category] || 'bg-gray-100 text-gray-800';
   };
+
+
+
+   if (pageLoading && (expenseList.length === 0 || categoriesList.length === 0)) {
+  return (
+    <div className="flex items-center justify-center h-screen">
+      <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-primary"></div>
+    </div>
+  );
+}
 
   return (
     <>

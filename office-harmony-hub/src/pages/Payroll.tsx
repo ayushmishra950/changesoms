@@ -11,6 +11,8 @@ import GeneratePayslipDialog from "@/Forms/GeneratePayslipDialog";
 import SalarySlipCard from '@/components/cards/SalarySlipCard';
 import {months} from "@/services/allFunctions";
 import { Helmet } from "react-helmet-async";
+import { useAppDispatch, useAppSelector } from '@/redux-toolkit/hooks/hook';
+import { getPayroll, getSinglePayroll } from '@/redux-toolkit/slice/allPage/payrollSlice';
 
 const today = new Date();
 const todayYear = today.getFullYear();
@@ -22,13 +24,16 @@ const Payroll: React.FC = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [salarySlipRefresh, setSalarySlipRefresh] = useState(false);
   const [initialData, setInitialData] = useState<any>(null);
-  const [allPayrolls, setAllPayrolls] = useState<any[]>([]);
-  const [singlePayrolls, setSinglePayrolls] = useState<any[]>([]);
+  // const [allPayrolls, setAllPayrolls] = useState<any[]>([]);
+  // const [singlePayrolls, setSinglePayrolls] = useState<any[]>([]);
   const [pdfData, setPdfData] = useState<any>(null);
   const [pdfOpenForm, setPdfOpenForm] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
-
+   const [pageLoading, setPageLoading] = useState(false);
+  const dispatch = useAppDispatch();
+  const allPayrolls = useAppSelector((state) => state.payroll.allPayRoll);
+  const singlePayrolls = useAppSelector((state) => state.payroll.singlePayRoll);
   const isEmployee = user?.role === 'employee';
 
   // Determine source array based on role
@@ -72,38 +77,59 @@ const Payroll: React.FC = () => {
   }, [allPayrolls]);
 
   const handleGetAllPayRolls = async () => {
+      setPageLoading(true);
     try {
       const data = await getAllPayRolls(user?.companyId?._id);
-      console.log("All Payrolls:", data);
       if (Array.isArray(data)) {
-        setAllPayrolls(data);
+        // setAllPayrolls(data);
+        dispatch(getPayroll(data));
+        setSalarySlipRefresh(false);
       }
     } catch (error) {
       console.error("Error fetching all payrolls:", error);
     }
+    finally{
+      setPageLoading(false);
+    }
   };
 
   const handleGetSinglePayRoll = async () => {
+      setPageLoading(true);
     try {
       const data = await getSinglePayRoll(user?._id, user?.createdBy?._id);
       if (Array.isArray(data)) {
-        setSinglePayrolls(data);
+        // setSinglePayrolls(data);
+        dispatch(getSinglePayroll(data));
+         setSalarySlipRefresh(false);
       }
     } catch (error) {
       console.error("Error fetching all payrolls:", error);
+    }
+    finally{
+      setPageLoading(false);
     }
   };
 
   useEffect(() => {
     if (!user) return; // agar user null ho to kuch na kare
 
-    if (user.role === 'admin') {
+    if (user.role === 'admin' && (  allPayrolls.length === 0 || salarySlipRefresh)) {
       handleGetAllPayRolls();
-    } else if (user.role === 'employee') {
+    } else if (user.role === 'employee' && (singlePayrolls.length === 0 || salarySlipRefresh)) {
       handleGetSinglePayRoll();
     }
-  }, [user, salarySlipRefresh]);
-  console.log(filteredPayrolls)
+  }, [user, salarySlipRefresh, allPayrolls.length, singlePayrolls.length]);
+
+
+   if (pageLoading && (allPayrolls.length === 0 || singlePayrolls.length === 0)) {
+  return (
+    <div className="flex items-center justify-center h-screen">
+      <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-primary"></div>
+    </div>
+  );
+}
+
+
   return (
     <>
     <Helmet>

@@ -12,6 +12,8 @@ import axios from "axios";
 import { useAuth } from "@/contexts/AuthContext";
 import { formatDateFromInput } from "@/services/allFunctions";
 import CategoryDialog from "@/Forms/CategoryDialog";
+import { useAppDispatch, useAppSelector } from "@/redux-toolkit/hooks/hook";
+import { getExpenseCategory } from "@/redux-toolkit/slice/allPage/expenseSlice";
 
 const ExpenseDialog = ({
   isOpen,
@@ -23,13 +25,15 @@ const ExpenseDialog = ({
   // Reset form when dialog closes (optional)
   const { user } = useAuth();
   const { toast } = useToast();
-  const [categoriesList, setCategoriesList] = useState([]);
+  // const [categoriesList, setCategoriesList] = useState([]);
   const [expense, setExpense] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const today = new Date().toISOString().split("T")[0];
   const [categoryListRefresh, setCategoryListRefersh] = useState(false);
   const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
-
+  const dispatch = useAppDispatch();
+   const categoriesList = useAppSelector((state) => state.expense.expenseCategory);  
+ 
 
   useEffect(() => {
     if (initialData) {
@@ -90,7 +94,7 @@ const ExpenseDialog = ({
   const handleGetCategory = async () => {
     try {
       const res = await getExpenseCategories(user?.companyId?._id);
-      if (res) { setCategoriesList(res); }
+      if (res) { dispatch(getExpenseCategory(res)); }
     } catch (err) {
       console.log("Error fetching categories:", err);
       toast({ title: "Error", description: "Failed to fetch categories", variant: "destructive" });
@@ -98,8 +102,10 @@ const ExpenseDialog = ({
   };
 
   useEffect(() => {
+    if(user?.role === "admin" && (categoryListRefresh || categoriesList.length === 0)) {
     handleGetCategory();
-  }, [categoryListRefresh]);
+    }
+  }, [categoryListRefresh, categoriesList.length, user,  ]);
 
   return (
     <>

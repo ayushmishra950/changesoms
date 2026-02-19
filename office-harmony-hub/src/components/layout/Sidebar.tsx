@@ -403,10 +403,11 @@ import { SidebarProps, navItems, taskSubMenu, JobSubMenu } from "@/services/allF
 import { useAuth } from '@/contexts/AuthContext';
 import { createPortal } from 'react-dom';
 
-const Sidebar: React.FC<SidebarProps> = ({setTaskName, isOpen, onToggle, setActiveSidebar, setTaskSubPage }) => {
+const Sidebar: React.FC<SidebarProps> = ({ setTaskName, setJobName, isOpen, onToggle, setActiveSidebar, setTaskSubPage, setJobSubPage }) => {
   const { user, logout } = useAuth();
   const location = useLocation();
   const sidebarRef = useRef<HTMLDivElement>(null);
+  const jobDropdownRef = useRef<HTMLDivElement>(null);
 
   // Default sidebar open
   const [isLocalOpen, setLocalOpen] = useState<boolean>(isOpen);
@@ -428,13 +429,30 @@ const Sidebar: React.FC<SidebarProps> = ({setTaskName, isOpen, onToggle, setActi
     setShowTaskSubMenu(false);
   };
 
-
-  // Li ke mouse events
-  const handleJobMouseEnter = (e: React.MouseEvent<HTMLLIElement, MouseEvent>) => {
+  const handleJobMouseEnter = (e: React.MouseEvent<HTMLLIElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
-    setJobDropdownPos({ top: rect.top, left: rect.right }); // sidebar ke right me dropdown
+
     setShowJobSubMenu(true);
+
+    setTimeout(() => {
+      if (jobDropdownRef.current) {
+        const dropdownHeight = jobDropdownRef.current.offsetHeight;
+        const spaceBelow = window.innerHeight - rect.top;
+
+        let topPosition = rect.top;
+
+        if (spaceBelow < dropdownHeight) {
+          topPosition = rect.bottom - dropdownHeight;
+        }
+
+        setJobDropdownPos({
+          top: topPosition,
+          left: rect.right
+        });
+      }
+    }, 0);
   };
+
 
   const handleJobMouseLeave = () => setShowJobSubMenu(false);
 
@@ -457,7 +475,7 @@ const Sidebar: React.FC<SidebarProps> = ({setTaskName, isOpen, onToggle, setActi
     const roleLabels = {
       super_admin: 'Super Admin',
       admin: 'Admin',
-      employee: user?.taskRole==="manager"?`Department Manager(${user?.department})` : "Employee",
+      employee: user?.taskRole === "manager" ? `Department Manager(${user?.department})` : "Employee",
     };
     return roleLabels[role as keyof typeof roleLabels] || role;
   };
@@ -520,21 +538,26 @@ const Sidebar: React.FC<SidebarProps> = ({setTaskName, isOpen, onToggle, setActi
         <nav className="flex-1 overflow-y-auto py-4 relative">
           <ul className="space-y-1 px-2">
             {filteredNavItems.map(item => {
-              const isActive = location.pathname === item.path;
+              const isTasksActive = location.pathname.startsWith("/tasks");
+              const isJobPortalActive = location.pathname.startsWith("/jobs");
+              const isThisActive = location.pathname === item.path;
 
-              const renderItem = () => (
+              const renderItem = (itemLabel: string) => (
                 <NavLink
                   to={item.path}
-                  onClick={() => {setTaskName("");setActiveSidebar(item.label)}} // only on click
+                  onClick={() => { setTaskName(""); setJobName(""); setActiveSidebar(item.label) }}
                   className={cn(
                     "sidebar-item flex items-center justify-between p-2",
-                    isActive && "sidebar-item-active",
+                    (itemLabel === "Tasks" && isTasksActive) ||
+                      (itemLabel === "Job-Portal" && isJobPortalActive) || isThisActive
+                      ? "bg-blue-600 text-white font-semibold"
+                      : "",
                     !isOpen && "justify-center"
                   )}
                 >
                   <div className="flex items-center gap-3">
                     <item.icon className="w-5 h-5 flex-shrink-0" />
-                    {isOpen && <span>{item.label === "Employees"?user?.role === "super_admin" ? "Admins" : "Employees": item?.label}</span>}
+                    {isOpen && <span>{item.label === "Employees" ? user?.role === "super_admin" ? "Admins" : "Employees" : item?.label}</span>}
                   </div>
 
                   {/* Arrow only for Tasks & Job-Portal */}
@@ -559,8 +582,8 @@ const Sidebar: React.FC<SidebarProps> = ({setTaskName, isOpen, onToggle, setActi
                     onMouseEnter={() => isOpen && setShowTaskSubMenu(true)}
                     onMouseLeave={() => setShowTaskSubMenu(false)}
                   >
-                    {renderItem()}
-                
+                    {renderItem(item.label)}
+
                     {showTaskSubMenu && createPortal(
                       <div
                         style={{ top: dropdownPos.top, left: dropdownPos.left }}
@@ -573,7 +596,7 @@ const Sidebar: React.FC<SidebarProps> = ({setTaskName, isOpen, onToggle, setActi
                             <li key={sub.path}>
                               <NavLink
                                 to={sub.path}
-                                 onClick={()=> {setTaskName("Tasks");setTaskSubPage(sub?.label);}}
+                                onClick={() => { setTaskName("Tasks"); setTaskSubPage(sub?.label); }}
                                 end={sub.path === "/tasks"} // only for dashboard
                                 className={({ isActive }) => cn(
                                   "block px-4 py-2 text-sm text-white hover:bg-sidebar-accent",
@@ -602,10 +625,11 @@ const Sidebar: React.FC<SidebarProps> = ({setTaskName, isOpen, onToggle, setActi
                     onMouseEnter={e => isOpen && handleJobMouseEnter(e)}
                     onMouseLeave={handleJobMouseLeave}
                   >
-                    {renderItem()}
+                    {renderItem(item.label)}
 
                     {isOpen && showJobSubMenu && createPortal(
                       <div
+                        ref={jobDropdownRef}
                         style={{ top: jobDropdownPos.top, left: jobDropdownPos.left }}
                         className="fixed w-48 bg-sidebar shadow-lg border border-sidebar-border z-50"
                         onMouseEnter={() => setShowJobSubMenu(true)}
@@ -616,6 +640,8 @@ const Sidebar: React.FC<SidebarProps> = ({setTaskName, isOpen, onToggle, setActi
                             <li key={sub.path}>
                               <NavLink
                                 to={sub.path}
+                                end={sub.path === "/jobs"} // only for dashboard
+                                onClick={() => { setJobSubPage(sub?.label); setJobName("Job-Portal"); }}
                                 className={({ isActive }) => cn(
                                   "block px-4 py-2 text-sm text-white hover:bg-sidebar-accent",
                                   isActive && "bg-sidebar-accent font-medium"
@@ -633,7 +659,7 @@ const Sidebar: React.FC<SidebarProps> = ({setTaskName, isOpen, onToggle, setActi
                 );
               }
 
-              return <li key={item.path}>{renderItem()}</li>;
+              return <li key={item.path}>{renderItem(item.label)}</li>;
             })}
           </ul>
         </nav>
@@ -657,3 +683,165 @@ const Sidebar: React.FC<SidebarProps> = ({setTaskName, isOpen, onToggle, setActi
 };
 
 export default Sidebar;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// {/* Navigation */}
+// <nav className="flex-1 overflow-y-auto py-4 relative">
+//   <ul className="space-y-1 px-2">
+//     {filteredNavItems.map(item => {
+//       // Check if parent items with submenus are active
+//       const isTasksActive = location.pathname.startsWith("/tasks");
+//       const isJobPortalActive = location.pathname.startsWith("/jobs");
+
+//       // Check if this menu item (leaf) itself is active
+//       const isThisActive = location.pathname === item.path;
+
+//       const renderItem = (itemLabel: string) => (
+//         <NavLink
+//           to={item.path}
+//           onClick={() => { setTaskName(""); setJobName(""); setActiveSidebar(item.label) }}
+//           className={cn(
+//             "sidebar-item flex items-center justify-between p-2",
+//             // Active logic: subpage active OR exact page active
+//             (itemLabel === "Tasks" && isTasksActive) ||
+//             (itemLabel === "Job-Portal" && isJobPortalActive) ||
+//             isThisActive
+//               ? "bg-blue-600 text-white font-semibold"
+//               : "hover:bg-blue-500 text-white",
+//             !isOpen && "justify-center"
+//           )}
+//         >
+//           <div className="flex items-center gap-3">
+//             <item.icon className="w-5 h-5 flex-shrink-0" />
+//             {isOpen && <span>{item.label === "Employees" ? user?.role === "super_admin" ? "Admins" : "Employees" : item?.label}</span>}
+//           </div>
+
+//           {/* Arrow only for Tasks & Job-Portal */}
+//           {isOpen && (item.label === "Tasks" || item.label === "Job-Portal") && (
+//             <ChevronRight
+//               className={cn(
+//                 "w-4 h-4 transition-transform duration-200",
+//                 item.label === "Tasks" && showTaskSubMenu && "rotate-90",
+//                 item.label === "Job-Portal" && showJobSubMenu && "rotate-90"
+//               )}
+//             />
+//           )}
+//         </NavLink>
+//       );
+
+//       // Tasks Dropdown
+//       if (item.label === "Tasks") {
+//         return (
+//           <li
+//             key={item.path}
+//             onMouseEnter={() => isOpen && setShowTaskSubMenu(true)}
+//             onMouseLeave={() => setShowTaskSubMenu(false)}
+//           >
+//             {renderItem(item.label)}
+
+//             {showTaskSubMenu && createPortal(
+//               <div
+//                 style={{ top: dropdownPos.top, left: dropdownPos.left }}
+//                 className="fixed w-48 bg-sidebar shadow-lg border border-sidebar-border z-50 md:ml-56 md:mt-52"
+//                 onMouseEnter={() => setShowTaskSubMenu(true)}
+//                 onMouseLeave={handleTaskMouseLeave}
+//               >
+//                 <ul>
+//                   {filteredTaskSubMenu.map(sub => (
+//                     <li key={sub.path}>
+//                       <NavLink
+//                         to={sub.path}
+//                         onClick={() => { setTaskName("Tasks"); setTaskSubPage(sub?.label); }}
+//                         end
+//                         className={({ isActive }) => cn(
+//                           "block px-4 py-2 text-sm text-white hover:bg-blue-500",
+//                           isActive ? "bg-blue-600 font-medium" : ""
+//                         )}
+//                       >
+//                         {sub.label}
+//                       </NavLink>
+//                     </li>
+//                   ))}
+//                 </ul>
+//               </div>,
+//               document.body
+//             )}
+//           </li>
+//         );
+//       }
+
+//       // Job Dropdown
+//       if (item.label === "Job-Portal") {
+//         return (
+//           <li
+//             key={item.path}
+//             className="relative"
+//             onMouseEnter={e => isOpen && handleJobMouseEnter(e)}
+//             onMouseLeave={handleJobMouseLeave}
+//           >
+//             {renderItem(item.label)}
+
+//             {isOpen && showJobSubMenu && createPortal(
+//               <div
+//                 ref={jobDropdownRef}
+//                 style={{ top: jobDropdownPos.top, left: jobDropdownPos.left }}
+//                 className="fixed w-48 bg-sidebar shadow-lg border border-sidebar-border z-50"
+//                 onMouseEnter={() => setShowJobSubMenu(true)}
+//                 onMouseLeave={handleJobMouseLeave}
+//               >
+//                 <ul>
+//                   {JobSubMenu.map(sub => (
+//                     <li key={sub.path}>
+//                       <NavLink
+//                         to={sub.path}
+//                         end
+//                         onClick={() => { setJobSubPage(sub?.label); setJobName("Job-Portal"); }}
+//                         className={({ isActive }) => cn(
+//                           "block px-4 py-2 text-sm text-white hover:bg-blue-500",
+//                           isActive ? "bg-blue-600 font-medium" : ""
+//                         )}
+//                       >
+//                         {sub.label}
+//                       </NavLink>
+//                     </li>
+//                   ))}
+//                 </ul>
+//               </div>,
+//               document.body
+//             )}
+//           </li>
+//         );
+//       }
+
+//       // Leaf item (no subpages)
+//       return <li key={item.path}>{renderItem(item.label)}</li>;
+//     })}
+//   </ul>
+// </nav>

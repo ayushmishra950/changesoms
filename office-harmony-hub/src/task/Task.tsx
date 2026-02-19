@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Plus, MoreHorizontal, Search, Filter, Eye, Edit, UserCheck, Trash2, ArrowLeft, CheckSquare  } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -20,6 +20,9 @@ import DeleteCard from "@/components/cards/DeleteCard";
 import SubTaskDetailCard from "./cards/SubTaskDetailCard";
 import { useNotifications } from "@/contexts/NotificationContext";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useAppDispatch, useAppSelector } from "@/redux-toolkit/hooks/hook";
+import { getEmployeeList } from "@/redux-toolkit/slice/allPage/userSlice";
+import { getTasks } from "@/redux-toolkit/slice/task/taskSlice";
 
 interface TaskItem {
   id: number;
@@ -43,7 +46,7 @@ const Task: React.FC = () => {
   const [isTaskStatusChangeModalOpen, setIsTaskStatusChangeModalOpen] = useState(false);
   const [name, setName] = useState("Task");
   const [taskCard, setTaskCard] = useState(false);
-  const [taskList, setTaskList] = useState([]);
+  // const [taskList, setTaskList] = useState([]);
   const [taskListRefresh, setTaskListRefresh] = useState(false);
   const [selectedTask, setSelectedTask] = useState(null);
   const [newStatus, setNewStatus] = useState(null);
@@ -55,8 +58,10 @@ const Task: React.FC = () => {
     const [subTaskListRefresh, setSubTaskListRefresh] = useState(false);
     const[subTaskOpenForm, setSubTaskOpenForm] = useState(false);
     const[taskId, setTaskId] = useState("");
-      const [employeeList, setEmployeeList] = useState<any[]>([]);
-    
+      // const [employeeList, setEmployeeList] = useState<any[]>([]);
+      const dispatch = useAppDispatch();
+      const taskList = useAppSelector((state) => state.task.tasks);
+      const employeeList = useAppSelector((state) => state.user.employees);
   
   const navigate = useNavigate();
   const location = useLocation();
@@ -80,7 +85,9 @@ const Task: React.FC = () => {
     const handleGetEmployees = async () => {
       try {
         const data = await getEmployees(user?.companyId?._id || user?.createdBy?._id);
-        if (Array.isArray(data)) setEmployeeList(data);
+        if (Array.isArray(data)) {
+          dispatch(getEmployeeList(data));
+        };
       } catch (err: any) {
         toast({
           title: "Error",
@@ -91,9 +98,10 @@ const Task: React.FC = () => {
     };
 
       useEffect(()=>{
-        if(user?.role !=="admin" && user?.taskRole !=="manager") return
+      if((user?.role === "admin" || user?.taskRole === "manager") && employeeList.length === 0){
           handleGetEmployees();
-        }, [])
+      }
+        }, [user?._id, employeeList.length]);
 
          const handleOpenTaskForm = () => {
   // 1️⃣ No employees
@@ -159,7 +167,8 @@ const Task: React.FC = () => {
       const res = await getTask(obj);
       console.log(res)
       if (res.status === 200) {
-        setTaskList(Array.isArray(res?.data?.data) ? res?.data?.data : Object.values(res?.data?.data));
+        // setTaskList(Array.isArray(res?.data?.data) ? res?.data?.data : Object.values(res?.data?.data));
+        dispatch(getTasks(Array.isArray(res?.data?.data) ? res?.data?.data : Object.values(res?.data?.data)));
         setTaskListRefresh(false);
         setIsTaskStatusChangeModalOpen(false);
       }
@@ -169,11 +178,24 @@ const Task: React.FC = () => {
       toast({ title: "Error", description: err.response.data.message, variant: "destructive" })
     }
   }
+const prevNotificationCount = useRef(0);
 
-  useEffect(() => {
+useEffect(() => {
+  if (!user?._id) return;
 
+  const isTaskListEmpty = taskList?.length === 0;
+  const isNewNotification =
+    notifications?.length > prevNotificationCount.current;
+
+  if (isTaskListEmpty || taskListRefresh || isNewNotification) {
     handleGetTask();
-  }, [taskListRefresh, notifications])
+  }
+
+  // update previous notification count
+  prevNotificationCount.current = notifications?.length || 0;
+
+}, [taskListRefresh, notifications, user?._id]);
+
 
   const handleConfirmDelete = async () => {
     if (!selectedTaskId || (!user?.companyId?._id && !user?.createdBy?._id) || !user?._id) return;

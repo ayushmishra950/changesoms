@@ -62,7 +62,7 @@ import {updateEmployeeByDepartment} from "@/services/Service";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 
-const DepartmentCard = ({refreshList, setEmployeeList,departmentData,setSelectedDepartmentEmployees, employees, onClose, departmentList }) => {
+const DepartmentCard = ({refreshList,departmentData,setSelectedDepartmentEmployees, employees, onClose, departmentList }) => {
   const {user} = useAuth();
   const {toast} = useToast();
   const [showActionCard, setShowActionCard] = useState(false);
@@ -73,6 +73,7 @@ const DepartmentCard = ({refreshList, setEmployeeList,departmentData,setSelected
      console.log(employees)
   useEffect(() => {
   if (selectedEmployee) {
+    console.log("Selected Employee:", selectedEmployee);
     setSelectedDepartments([selectedEmployee.department]); // agar single department
   }
 }, [selectedEmployee]);
@@ -88,15 +89,6 @@ useEffect(() => {
 }, [employees]);
 
 
-
-  // Dummy department list for Action card
-  const dummyDepartments = [
-    { id: 1, name: "Development" },
-    { id: 2, name: "Marketing" },
-    { id: 3, name: "HR" },
-    { id: 4, name: "Design" },
-  ];
-
   const handleActionClick = (emp) => {
     setSelectedEmployee(emp);
     setShowActionCard(true);
@@ -110,14 +102,6 @@ useEffect(() => {
 
     // Optimistic update
   setSelectedDepartmentEmployees(prev =>
-    prev.map(emp =>
-      emp._id === selectedEmployee._id
-        ? { ...emp, department: selectedDepartments[0] }
-        : emp
-    )
-  );
-
-  setEmployeeList(prev =>
     prev.map(emp =>
       emp._id === selectedEmployee._id
         ? { ...emp, department: selectedDepartments[0] }
@@ -141,7 +125,6 @@ useEffect(() => {
        setIsLoading(false);
       }
 
-      console.log(employees, selectedEmployee)
    
   };
   return (

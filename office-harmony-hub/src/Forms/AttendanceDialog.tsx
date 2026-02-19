@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import {getEmployees, getAttendancebyday, updateAttendancebyday} from "@/services/Service";
 import { Loader2 } from "lucide-react";
+import { useAppSelector } from "@/redux-toolkit/hooks/hook";
 
 type Employee = {
   id: string;
@@ -30,8 +31,9 @@ const AttendanceForm: React.FC<AttendanceFormProps> = ({ setAttendanceRefresh, o
    const [date, setDate] = useState(currentDate);
  const [startTime, setStartTime] = useState("");
 const [endTime, setEndTime] = useState("");
-  const[employeeList, setEmployeeList] = useState([]);
+  // const[employeeList, setEmployeeList] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const employeeList = useAppSelector((state) => state.user.employees);
 
   const handleSubmit = async() => {
   if (!employeeId || !startTime || !endTime) {
@@ -69,21 +71,21 @@ const [endTime, setEndTime] = useState("");
 };
 
 
-  const handleGetEmployees = async () => {
-      if(user?.role !=="admin" && !user?.companyId?._id) return toast({title:"Error", description:"You are not permission yet. please contact the admin.", variant:"destructive"});
-      try {
-        let data = null;
-         if(user?.role === "admin"){
-         data = await getEmployees(user?.companyId?._id);
-         }
-        if (Array.isArray(data)) {
-          setEmployeeList(data);
-        }
-      } catch (err) {
-        console.log(err);
-        toast({ title: "Error", description: err?.response?.data?.message || "Something went wrong", variant:"destructive"});
-      }
-    };
+  // const handleGetEmployees = async () => {
+  //     if(user?.role !=="admin" && !user?.companyId?._id) return toast({title:"Error", description:"You are not permission yet. please contact the admin.", variant:"destructive"});
+  //     try {
+  //       let data = null;
+  //        if(user?.role === "admin"){
+  //        data = await getEmployees(user?.companyId?._id);
+  //        }
+  //       if (Array.isArray(data)) {
+  //         setEmployeeList(data);
+  //       }
+  //     } catch (err) {
+  //       console.log(err);
+  //       toast({ title: "Error", description: err?.response?.data?.message || "Something went wrong", variant:"destructive"});
+  //     }
+  //   };
 
     
   const handleGetAttendance = async () => {
@@ -116,13 +118,6 @@ const [endTime, setEndTime] = useState("");
 
   handleGetAttendance();
 }, [employeeId]);
-
-
-
-    useEffect(()=>{
-        if(isOpen !== true) return;
-        handleGetEmployees();
-    })
 
   if(isOpen !== true) return;
 

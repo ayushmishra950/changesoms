@@ -1,7 +1,6 @@
 import axios from "axios";
 import jsPDF from "jspdf";
 import autoTable from 'jspdf-autotable';
-import API from "@/api/interceptor";
 
 
 export const generatePDF = (expenses) => {
@@ -29,22 +28,22 @@ export const generatePDF = (expenses) => {
     startY: 30,
   });
 
-  doc.save(`expense_report_${new Date().toISOString().slice(0,10)}.pdf`);
+  doc.save(`expense_report_${new Date().toISOString().slice(0, 10)}.pdf`);
 };
 
 
 export const getNotificationData = async (id, companyId) => {
   const res = await axios.get(
-    `${import.meta.env.VITE_API_URL}/api/auth/notification`,{params : {userId : id, companyId : companyId}}
+    `${import.meta.env.VITE_API_URL}/api/auth/notification`, { params: { userId: id, companyId: companyId } }
   );
 
   return res;
 };
 
 
-export const deleteNotifications = async (id,userId, companyId) => {
+export const deleteNotifications = async (id, userId, companyId) => {
   const res = await axios.delete(
-    `${import.meta.env.VITE_API_URL}/api/auth/notification/delete`,{params : {id:id,userId : userId, companyId : companyId}}
+    `${import.meta.env.VITE_API_URL}/api/auth/notification/delete`, { params: { id: id, userId: userId, companyId: companyId } }
   );
 
   return res;
@@ -53,7 +52,7 @@ export const deleteNotifications = async (id,userId, companyId) => {
 
 export const deleteAllNotifications = async (userId, companyId) => {
   const res = await axios.delete(
-    `${import.meta.env.VITE_API_URL}/api/auth/notification/alldelete`,{params : {userId : userId, companyId : companyId}}
+    `${import.meta.env.VITE_API_URL}/api/auth/notification/alldelete`, { params: { userId: userId, companyId: companyId } }
   );
 
   return res;
@@ -62,7 +61,15 @@ export const deleteAllNotifications = async (userId, companyId) => {
 
 export const getAttendanceData = async (month, year, companyId) => {
   const res = await axios.get(
-    `${import.meta.env.VITE_API_URL}/api/attendance`,{params : {month, year, companyId : companyId}})
+    `${import.meta.env.VITE_API_URL}/api/attendance`, { params: { month, year, companyId: companyId } })
+
+  return res;
+};
+
+
+export const getAttendanceById = async (userId, month, year, companyId) => {
+  const res = await axios.get(
+    `${import.meta.env.VITE_API_URL}/api/attendance/attendancebyid`, { params: { userId, month, year, companyId: companyId } })
 
   return res;
 };
@@ -70,7 +77,7 @@ export const getAttendanceData = async (month, year, companyId) => {
 
 export const getAttendancebyday = async (obj) => {
   const res = await axios.get(
-    `${import.meta.env.VITE_API_URL}/api/attendance/attendancebyday`,{params : obj})
+    `${import.meta.env.VITE_API_URL}/api/attendance/attendancebyday`, { params: obj })
 
   return res;
 };
@@ -78,7 +85,7 @@ export const getAttendancebyday = async (obj) => {
 
 export const updateAttendancebyday = async (obj) => {
   const res = await axios.patch(
-    `${import.meta.env.VITE_API_URL}/api/attendance/update/attendance`,obj)
+    `${import.meta.env.VITE_API_URL}/api/attendance/update/attendance`, obj)
 
   return res;
 };
@@ -86,7 +93,7 @@ export const updateAttendancebyday = async (obj) => {
 
 export const submitClockIn = async (id: string, companyId) => {
   const res = await axios.post(
-    `${import.meta.env.VITE_API_URL}/api/attendance/clock-in/${id}`, {companyId}
+    `${import.meta.env.VITE_API_URL}/api/attendance/clock-in/${id}`, { companyId }
   );
 
   return res;
@@ -95,7 +102,7 @@ export const submitClockIn = async (id: string, companyId) => {
 
 export const submitClockOut = async (id: string, companyId) => {
   const res = await axios.post(
-    `${import.meta.env.VITE_API_URL}/api/attendance/clock-out/${id}`,{companyId}
+    `${import.meta.env.VITE_API_URL}/api/attendance/clock-out/${id}`, { companyId }
   );
 
   return res;
@@ -123,7 +130,7 @@ export const updateAdmin = async (id, obj) => {
 
 export const updateAdminStatus = async (adminId, userId, status) => {
   const res = await axios.put(
-    `${import.meta.env.VITE_API_URL}/api/auth/admin/status`,{adminId:adminId, superAdminId:userId, status:status}
+    `${import.meta.env.VITE_API_URL}/api/auth/admin/status`, { adminId: adminId, superAdminId: userId, status: status }
   );
 
   return res;
@@ -132,7 +139,7 @@ export const updateAdminStatus = async (adminId, userId, status) => {
 
 export const deleteAdmin = async (id, userId) => {
   const res = await axios.delete(
-    `${import.meta.env.VITE_API_URL}/api/auth/delete`, {params: {id:id, userId:userId}}
+    `${import.meta.env.VITE_API_URL}/api/auth/delete`, { params: { id: id, userId: userId } }
   );
 
   return res;
@@ -140,7 +147,7 @@ export const deleteAdmin = async (id, userId) => {
 
 export const loginUser = async (email, password) => {
   const res = await axios.post(
-    `${import.meta.env.VITE_API_URL}/api/auth/login`, {email : email, password : password}
+    `${import.meta.env.VITE_API_URL}/api/auth/login`, { email: email, password: password }
   );
 
   return res;
@@ -148,7 +155,7 @@ export const loginUser = async (email, password) => {
 
 export const getSingleUser = async (id, companyId) => {
   const res = await axios.get(
-    `${import.meta.env.VITE_API_URL}/api/auth/getbyid`,{params : {userId : id, companyId : companyId}}
+    `${import.meta.env.VITE_API_URL}/api/auth/getbyid`, { params: { userId: id, companyId: companyId } }
   );
 
   return res;
@@ -157,7 +164,7 @@ export const getSingleUser = async (id, companyId) => {
 
 export const getDashboardPage = async (id, companyId) => {
   const res = await axios.get(
-    `${import.meta.env.VITE_API_URL}/api/auth/dashboardsummary`,{params : {userId : id, companyId : companyId}}
+    `${import.meta.env.VITE_API_URL}/api/auth/dashboardsummary`, { params: { userId: id, companyId: companyId } }
   );
 
   return res;
@@ -167,15 +174,24 @@ export const getDashboardPage = async (id, companyId) => {
 
 export const getAnalyticsReportPage = async (id, companyId) => {
   const res = await axios.get(
-    `${import.meta.env.VITE_API_URL}/api/auth/report`,{params : {userId : id, companyId : companyId}}
+    `${import.meta.env.VITE_API_URL}/api/auth/report`, { params: { userId: id, companyId: companyId } }
   );
 
   return res;
 };
 
-export const addTaskManager = async (id, companyId,obj) => {
+
+export const getAttendanceReportPage = async (id, companyId, week) => {
+  const res = await axios.get(
+    `${import.meta.env.VITE_API_URL}/api/auth/weekly-attendance-report`, { params: { userId: id, companyId: companyId, week: week } }
+  );
+
+  return res;
+};
+
+export const addTaskManager = async (id, companyId, obj) => {
   const res = await axios.post(
-    `${import.meta.env.VITE_API_URL}/api/task/manager/add`, {userId : id, companyId : companyId, obj : obj}
+    `${import.meta.env.VITE_API_URL}/api/task/manager/add`, { userId: id, companyId: companyId, obj: obj }
   );
 
   return res;
@@ -183,7 +199,7 @@ export const addTaskManager = async (id, companyId,obj) => {
 
 export const getTaskManager = async (id, companyId) => {
   const res = await axios.get(
-    `${import.meta.env.VITE_API_URL}/api/task/manager/get`,{params : {userId : id, companyId : companyId}}
+    `${import.meta.env.VITE_API_URL}/api/task/manager/get`, { params: { userId: id, companyId: companyId } }
   );
 
   return res;
@@ -191,15 +207,15 @@ export const getTaskManager = async (id, companyId) => {
 
 export const updateTaskManager = async (id, companyId, obj) => {
   const res = await axios.put(
-    `${import.meta.env.VITE_API_URL}/api/task/manager/update`,{userId : id, companyId : companyId, obj : obj}
+    `${import.meta.env.VITE_API_URL}/api/task/manager/update`, { userId: id, companyId: companyId, obj: obj }
   );
 
   return res;
 };
 
-export const deleteTaskManager = async (id, companyId,employeeId) => {
+export const deleteTaskManager = async (id, companyId, employeeId) => {
   const res = await axios.delete(
-    `${import.meta.env.VITE_API_URL}/api/task/manager/delete`,{params : {userId : id, companyId : companyId, employeeId: employeeId}}
+    `${import.meta.env.VITE_API_URL}/api/task/manager/delete`, { params: { userId: id, companyId: companyId, employeeId: employeeId } }
   );
 
   return res;
@@ -216,9 +232,9 @@ export const projectStatusChange = async (obj) => {
 };
 
 
-export const addProject = async (id, companyId,obj) => {
+export const addProject = async (id, companyId, obj) => {
   const res = await axios.post(
-    `${import.meta.env.VITE_API_URL}/api/task/project/add`, {adminId : id, companyId : companyId, obj : obj}
+    `${import.meta.env.VITE_API_URL}/api/task/project/add`, { adminId: id, companyId: companyId, obj: obj }
   );
 
   return res;
@@ -227,7 +243,7 @@ export const addProject = async (id, companyId,obj) => {
 
 export const getProject = async (id, companyId) => {
   const res = await axios.get(
-    `${import.meta.env.VITE_API_URL}/api/task/project/get`,{params : {adminId : id, companyId : companyId}}
+    `${import.meta.env.VITE_API_URL}/api/task/project/get`, { params: { adminId: id, companyId: companyId } }
   );
 
   return res;
@@ -236,7 +252,7 @@ export const getProject = async (id, companyId) => {
 
 export const getDashboardData = async (id, companyId) => {
   const res = await axios.get(
-    `${import.meta.env.VITE_API_URL}/api/task/project/dashboardsummary`,{params : {userId : id, companyId : companyId}}
+    `${import.meta.env.VITE_API_URL}/api/task/project/dashboardsummary`, { params: { userId: id, companyId: companyId } }
   );
 
   return res;
@@ -245,7 +261,7 @@ export const getDashboardData = async (id, companyId) => {
 
 export const getProjectById = async (projectId, companyId, adminId) => {
   const res = await axios.get(
-    `${import.meta.env.VITE_API_URL}/api/task/project/getbyid`,{params : {projectId, companyId, adminId}}
+    `${import.meta.env.VITE_API_URL}/api/task/project/getbyid`, { params: { projectId, companyId, adminId } }
   );
 
   return res;
@@ -253,7 +269,7 @@ export const getProjectById = async (projectId, companyId, adminId) => {
 
 export const updateProject = async (id, companyId, obj) => {
   const res = await axios.put(
-    `${import.meta.env.VITE_API_URL}/api/task/project/update`,{adminId : id, companyId : companyId, obj : obj}
+    `${import.meta.env.VITE_API_URL}/api/task/project/update`, { adminId: id, companyId: companyId, obj: obj }
   );
 
   return res;
@@ -262,7 +278,7 @@ export const updateProject = async (id, companyId, obj) => {
 
 export const deleteProject = async (obj) => {
   const res = await axios.delete(
-    `${import.meta.env.VITE_API_URL}/api/task/project/delete`,{params : {projectId: obj?.projectId, companyId:obj?.companyId, adminId:obj?.adminId}}
+    `${import.meta.env.VITE_API_URL}/api/task/project/delete`, { params: { projectId: obj?.projectId, companyId: obj?.companyId, adminId: obj?.adminId } }
   );
 
   return res;
@@ -270,9 +286,9 @@ export const deleteProject = async (obj) => {
 
 export const addTask = async (obj) => {
   const res = await axios.post(
-    `${import.meta.env.VITE_API_URL}/api/task/task/add`,obj
+    `${import.meta.env.VITE_API_URL}/api/task/task/add`, obj
   );
-  
+
   return res;
 };
 
@@ -280,25 +296,25 @@ export const addTask = async (obj) => {
 export const getTask = async (obj) => {
   console.log(obj)
   const res = await axios.get(
-    `${import.meta.env.VITE_API_URL}/api/task/task/get`,{params : { companyId: obj?.companyId, userId: obj?.adminId }}
+    `${import.meta.env.VITE_API_URL}/api/task/task/get`, { params: { companyId: obj?.companyId, userId: obj?.adminId } }
   );
-   
+
   return res;
 };
 
 
 export const getTaskById = async (taskId, companyId, adminId) => {
   const res = await axios.get(
-    `${import.meta.env.VITE_API_URL}/api/task/task/getbyid`,{params : {taskId, companyId, adminId}}
+    `${import.meta.env.VITE_API_URL}/api/task/task/getbyid`, { params: { taskId, companyId, adminId } }
   );
 
   return res;
 };
 
 
-export const getOverdueTask = async (userId:string, companyId:string) => {
+export const getOverdueTask = async (userId: string, companyId: string) => {
   const res = await axios.get(
-    `${import.meta.env.VITE_API_URL}/api/task/task/overdue`,{params : {userId, companyId}}
+    `${import.meta.env.VITE_API_URL}/api/task/task/overdue`, { params: { userId, companyId } }
   );
 
   return res;
@@ -307,7 +323,7 @@ export const getOverdueTask = async (userId:string, companyId:string) => {
 
 export const updateTask = async (obj) => {
   const res = await axios.put(
-    `${import.meta.env.VITE_API_URL}/api/task/task/update`,obj
+    `${import.meta.env.VITE_API_URL}/api/task/task/update`, obj
   );
 
   return res;
@@ -315,7 +331,7 @@ export const updateTask = async (obj) => {
 
 export const taskStatusChange = async (obj) => {
   const res = await axios.patch(
-    `${import.meta.env.VITE_API_URL}/api/task/task/status`,obj
+    `${import.meta.env.VITE_API_URL}/api/task/task/status`, obj
   );
 
   return res;
@@ -324,7 +340,7 @@ export const taskStatusChange = async (obj) => {
 
 export const reassignTask = async (obj) => {
   const res = await axios.patch(
-    `${import.meta.env.VITE_API_URL}/api/task/task/reassign`,obj
+    `${import.meta.env.VITE_API_URL}/api/task/task/reassign`, obj
   );
 
   return res;
@@ -333,7 +349,7 @@ export const reassignTask = async (obj) => {
 
 export const deleteTask = async (obj) => {
   const res = await axios.delete(
-    `${import.meta.env.VITE_API_URL}/api/task/task/delete`,{params : {taskId: obj?.taskId, companyId:obj?.companyId, adminId:obj?.adminId}}
+    `${import.meta.env.VITE_API_URL}/api/task/task/delete`, { params: { taskId: obj?.taskId, companyId: obj?.companyId, adminId: obj?.adminId } }
   );
 
   return res;
@@ -343,7 +359,7 @@ export const deleteTask = async (obj) => {
 // Sub Task k form k liye
 export const getEmployeebyDepartment = async (obj) => {
   const res = await axios.get(
-    `${import.meta.env.VITE_API_URL}/api/task/subtask/employee`,{params : { taskId: obj?.taskId, department:obj.department, companyId:obj.companyId, adminId:obj.adminId}}
+    `${import.meta.env.VITE_API_URL}/api/task/subtask/employee`, { params: { taskId: obj?.taskId, department: obj.department, companyId: obj.companyId, adminId: obj.adminId } }
   );
 
   return res;
@@ -352,7 +368,7 @@ export const getEmployeebyDepartment = async (obj) => {
 
 export const addSubTask = async (obj) => {
   const res = await axios.post(
-    `${import.meta.env.VITE_API_URL}/api/task/subtask/add`,obj
+    `${import.meta.env.VITE_API_URL}/api/task/subtask/add`, obj
   );
 
   return res;
@@ -360,7 +376,7 @@ export const addSubTask = async (obj) => {
 
 export const getSubTask = async (obj) => {
   const res = await axios.get(
-    `${import.meta.env.VITE_API_URL}/api/task/subtask/get`,{params : obj}
+    `${import.meta.env.VITE_API_URL}/api/task/subtask/get`, { params: obj }
   );
 
   return res;
@@ -369,7 +385,7 @@ export const getSubTask = async (obj) => {
 
 export const getSubTaskById = async (subTaskId, companyId, userId) => {
   const res = await axios.get(
-    `${import.meta.env.VITE_API_URL}/api/task/subtask/getbyid`,{params : {subTaskId, companyId, userId}}
+    `${import.meta.env.VITE_API_URL}/api/task/subtask/getbyid`, { params: { subTaskId, companyId, userId } }
   );
 
   return res;
@@ -377,7 +393,7 @@ export const getSubTaskById = async (subTaskId, companyId, userId) => {
 
 export const updateSubTask = async (obj) => {
   const res = await axios.put(
-    `${import.meta.env.VITE_API_URL}/api/task/subtask/update`,obj
+    `${import.meta.env.VITE_API_URL}/api/task/subtask/update`, obj
   );
 
   return res;
@@ -386,7 +402,7 @@ export const updateSubTask = async (obj) => {
 
 export const statusChangeSubTask = async (obj) => {
   const res = await axios.patch(
-    `${import.meta.env.VITE_API_URL}/api/task/subtask/status`,obj
+    `${import.meta.env.VITE_API_URL}/api/task/subtask/status`, obj
   );
 
   return res;
@@ -395,7 +411,7 @@ export const statusChangeSubTask = async (obj) => {
 
 export const reassignSubTask = async (obj) => {
   const res = await axios.patch(
-    `${import.meta.env.VITE_API_URL}/api/task/subtask/reassign`,obj
+    `${import.meta.env.VITE_API_URL}/api/task/subtask/reassign`, obj
   );
 
   return res;
@@ -404,7 +420,7 @@ export const reassignSubTask = async (obj) => {
 
 export const deleteSubTask = async (obj) => {
   const res = await axios.delete(
-    `${import.meta.env.VITE_API_URL}/api/task/subtask/delete`,{params : {subtaskId: obj?.subtaskId, companyId:obj?.companyId, adminId:obj?.adminId}}
+    `${import.meta.env.VITE_API_URL}/api/task/subtask/delete`, { params: { subtaskId: obj?.subtaskId, companyId: obj?.companyId, adminId: obj?.adminId } }
   );
 
   return res;
@@ -415,7 +431,7 @@ export const deleteSubTask = async (obj) => {
 export const updatePassword = async (userId, email, newPassword, companyId) => {
   const res = await axios.post(
     `${import.meta.env.VITE_API_URL}/api/auth/updatepassword`,
-     {userId : userId,email : email, newPassword : newPassword, companyId : companyId}
+    { userId: userId, email: email, newPassword: newPassword, companyId: companyId }
   );
 
   return res;
@@ -423,7 +439,7 @@ export const updatePassword = async (userId, email, newPassword, companyId) => {
 
 export const updateUser = async (userId, companyId, data) => {
   const res = await axios.patch(
-    `${import.meta.env.VITE_API_URL}/api/auth/updateuser`,{userId, companyId, data}
+    `${import.meta.env.VITE_API_URL}/api/auth/updateuser`, { userId, companyId, data }
   );
 
   return res;
@@ -467,30 +483,39 @@ export const getleaveRequests = async (companyId) => {
     `${import.meta.env.VITE_API_URL}/api/leave-requests/${companyId}`
   );
 
-  return res; 
+  return res;
 };
 
 export const getSingleleaveRequests = async (userId, companyId) => {
   const res = await axios.get(
-    `${import.meta.env.VITE_API_URL}/api/leave-requests/my/${userId}`,{params : {companyId}}
+    `${import.meta.env.VITE_API_URL}/api/leave-requests/my/${userId}`, { params: { companyId } }
   );
 
-  return res; 
+  return res;
+};
+
+
+export const getSingleleaveRequestsByDate = async (userId, companyId, month, year) => {
+  const res = await axios.get(
+    `${import.meta.env.VITE_API_URL}/api/leave-requests/my/${userId}/date`, { params: { companyId, month, year } }
+  );
+
+  return res;
 };
 
 
 export const leaveStatusChange = async (newStatus, request, companyId, userId) => {
   const res = await axios.put(
     `${import.meta.env.VITE_API_URL}/api/leave-requests/status`,
-    { status: newStatus, requestId: request._id , companyId, userId:userId}
+    { status: newStatus, requestId: request._id, companyId, userId: userId }
   );
 
-  return res; 
+  return res;
 };
 
 export const leaveDelete = async (selectedLeaveTypeId, companyId) => {
   const res = await axios.delete(
-    `${import.meta.env.VITE_API_URL}/api/leaves/${selectedLeaveTypeId}`,{data : {companyId}}
+    `${import.meta.env.VITE_API_URL}/api/leaves/${selectedLeaveTypeId}`, { data: { companyId } }
   );
 
   return res;
@@ -507,7 +532,7 @@ export const addPayRoll = async (obj) => {
 
 export const getAllPayRolls = async (companyId) => {
   const res = await axios.get(
-    `${import.meta.env.VITE_API_URL}/api/payRollRoutes/get`,{params : {companyId}}
+    `${import.meta.env.VITE_API_URL}/api/payRollRoutes/get`, { params: { companyId } }
   );
 
   return res.data;
@@ -515,7 +540,7 @@ export const getAllPayRolls = async (companyId) => {
 
 export const getSinglePayRoll = async (id, companyId) => {
   const res = await axios.get(
-    `${import.meta.env.VITE_API_URL}/api/payRollRoutes/getbyid/${id}`,{params : {companyId}}
+    `${import.meta.env.VITE_API_URL}/api/payRollRoutes/getbyid/${id}`, { params: { companyId } }
   );
 
   return res.data;
@@ -551,7 +576,7 @@ export const updateDepartment = async (id, obj) => {
 
 export const updateEmployeeByDepartment = async (obj) => {
   const res = await axios.patch(
-    `${import.meta.env.VITE_API_URL}/api/departments/update/employee`,obj
+    `${import.meta.env.VITE_API_URL}/api/departments/update/employee`, obj
   );
 
   return res.data;
@@ -560,11 +585,11 @@ export const updateEmployeeByDepartment = async (obj) => {
 
 export const addEmployees = async (formData) => {
   const res = await axios.post(
-    `${import.meta.env.VITE_API_URL}/api/employees/add`,formData, {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        }
+    `${import.meta.env.VITE_API_URL}/api/employees/add`, formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  }
   );
 
   return res.data;
@@ -583,11 +608,11 @@ export const updateEmployees = async (id, formData) => {
   const res = await axios.put(
     `${import.meta.env.VITE_API_URL}/api/employees/updateEmployee/${id}`,
     formData,
-          {
-            headers: {
-              "Content-Type": "multipart/form-data",
-            },
-          }
+    {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    }
   );
 
   return res.data;
@@ -596,14 +621,14 @@ export const updateEmployees = async (id, formData) => {
 
 
 export const getEmployeebyId = async (id, companyId) => {
- const res = await axios.get(
-  `${import.meta.env.VITE_API_URL}/api/employees/getbyid/${id}`,
-  {
-    params: {
-      companyId: companyId, // ye tumhari variable hai jisme companyId stored hai
-    },
-  }
-);
+  const res = await axios.get(
+    `${import.meta.env.VITE_API_URL}/api/employees/getbyid/${id}`,
+    {
+      params: {
+        companyId: companyId, // ye tumhari variable hai jisme companyId stored hai
+      },
+    }
+  );
 
 
 

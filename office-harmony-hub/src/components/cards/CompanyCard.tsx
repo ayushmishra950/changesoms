@@ -60,11 +60,11 @@
 // };
 
 // const CompanyList: React.FC = () => {
- 
+
 //    const {user} = useAuth();
 //    const {toast} = useToast();
 //    const [companyList, setCompanyList] = useState([]);
-  
+
 //     const handleGetCompany = async () => {
 //       try {
 //         const res = await getCompanys(user?._id);
@@ -78,7 +78,7 @@
 //         toast({title:"Error", description:err?.message || err?.response?.data?.message, variant:"destructive"})
 //       }
 //     }
-  
+
 //     useEffect(() => {
 //       handleGetCompany()
 //     }, [])
@@ -114,104 +114,107 @@
 
 
 import React, { useEffect, useState } from 'react';
-import { Users, Building, MapPin, Folder, History, Phone, Calendar, Globe  } from 'lucide-react';
+import { Users, Building, MapPin, Folder, History, Phone, Calendar, Globe } from 'lucide-react';
 import { getCompanysByDashboard } from "@/services/Service";
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import {formatDate} from "@/services/allFunctions";
+import { formatDate } from "@/services/allFunctions";
+import { Company } from '@/types';
+import { useAppDispatch, useAppSelector } from '@/redux-toolkit/hooks/hook';
+import { getCompany, getRecentActivities } from '@/redux-toolkit/slice/allPage/companySlice';
 
-interface Company {
-  _id: string;
-  name: string;
-  logo?: string;
-  totalEmployees: number;
-  location?: string;
-  industry?: string;
-  totalProjects?: string;
-  createdAt?:string;
-  contactNumber?:string;
-  address?:string;
-  adminNames?:string;
-  isActive?:boolean;
-  website?:string;
-}
+// interface Company {
+//   _id: string;
+//   name: string;
+//   logo?: string;
+//   totalEmployees: number;
+//   location?: string;
+//   industry?: string;
+//   totalProjects?: string;
+//   createdAt?: string;
+//   contactNumber?: string;
+//   address?: string;
+//   adminNames?: string;
+//   isActive?: boolean;
+//   website?: string;
+// }
 
 const CompanyCard: React.FC<{ company: Company }> = ({ company }) => {
-  const { name, logo,isActive,createdAt, totalEmployees,website, totalProjects, address,adminNames, industry, contactNumber } = company;
+  const { name, logo, isActive, createdAt, totalEmployees, website, totalProjects, address, adminNames, industry, contactNumber } = company;
 
   return (
-  <div className="relative w-full bg-white dark:bg-gray-800 shadow-md rounded-xl p-4 hover:shadow-xl transition-shadow max-h-[350px] overflow-y-auto">
+    <div className="relative w-full bg-white dark:bg-gray-800 shadow-md rounded-xl p-4 hover:shadow-xl transition-shadow max-h-[350px] overflow-y-auto">
 
-    {/* 🔹 Status Badge (Top Right) */}
-    <div className="absolute top-4 right-4">
-      <span
-        className={`px-3 py-1 text-xs font-semibold rounded-full 
-        ${isActive 
-          ? "bg-green-100 text-green-600" 
-          : "bg-red-100 text-red-600"}`}
-      >
-        {isActive ? "Active" : "Inactive"}
-      </span>
-    </div>
+      {/* 🔹 Status Badge (Top Right) */}
+      <div className="absolute top-4 right-4">
+        <span
+          className={`px-3 py-1 text-xs font-semibold rounded-full 
+        ${isActive
+              ? "bg-green-100 text-green-600"
+              : "bg-red-100 text-red-600"}`}
+        >
+          {isActive ? "Active" : "Inactive"}
+        </span>
+      </div>
 
-    <div className="flex items-center mb-4">
-      {logo ? (
-        <img
-          src={logo}
-          alt={`${name} logo`}
-          className="w-14 h-14 rounded-full object-cover border border-gray-200"
-        />
-      ) : (
-        <div className="w-14 h-14 rounded-full bg-primary/20 flex items-center justify-center text-primary text-2xl font-bold">
-          {name.charAt(0)}
+      <div className="flex items-center mb-4">
+        {logo ? (
+          <img
+            src={logo}
+            alt={`${name} logo`}
+            className="w-14 h-14 rounded-full object-cover border border-gray-200"
+          />
+        ) : (
+          <div className="w-14 h-14 rounded-full bg-primary/20 flex items-center justify-center text-primary text-2xl font-bold">
+            {name.charAt(0)}
+          </div>
+        )}
+        <div className="ml-4">
+          <h2 className="text-xl font-bold">{name}</h2>
+          <p className="text-sm text-muted-foreground">
+            Admin: {adminNames?.[0] || "Admin"}
+          </p>
         </div>
-      )}
-      <div className="ml-4">
-        <h2 className="text-xl font-bold">{name}</h2>
-        <p className="text-sm text-muted-foreground">
-          Admin: {adminNames?.[0] || "Admin"}
-        </p>
-      </div>
-    </div>
-
-    <div className="flex flex-col gap-3 text-sm text-muted-foreground">
-      <div className="flex items-center">
-        <Users className="w-5 h-5 mr-2 text-primary" />
-        Employees: {totalEmployees}
       </div>
 
-      <div className="flex items-center">
-        <Folder className="w-5 h-5 mr-2 text-primary" />
-        Projects: {totalProjects}
-      </div>
-
-      <div className="flex items-center">
-        <MapPin className="w-5 h-5 mr-2 text-primary" />
-        Location: {address}
-      </div>
-
-      <div className="flex items-center">
-        <Phone className="w-5 h-5 mr-2 text-primary" />
-        Contact: {contactNumber}
-      </div>
-
-      <div className="flex items-center">
-        <Building className="w-5 h-5 mr-2 text-primary" />
-        Industry: {industry || "IT"}
-      </div>
-
-      {/* 🔹 Created Date */}
-      <div className="flex items-center">
-        <Calendar className="w-5 h-5 mr-2 text-primary" />
-        Created: {new Date(createdAt).toLocaleDateString()}
-      </div>
+      <div className="flex flex-col gap-3 text-sm text-muted-foreground">
         <div className="flex items-center">
-        <Globe  className="w-5 h-5 mr-2 text-primary" />
-        Website: {website}
+          <Users className="w-5 h-5 mr-2 text-primary" />
+          Employees: {totalEmployees}
+        </div>
+
+        <div className="flex items-center">
+          <Folder className="w-5 h-5 mr-2 text-primary" />
+          Projects: {totalProjects}
+        </div>
+
+        <div className="flex items-center">
+          <MapPin className="w-5 h-5 mr-2 text-primary" />
+          Location: {address}
+        </div>
+
+        <div className="flex items-center">
+          <Phone className="w-5 h-5 mr-2 text-primary" />
+          Contact: {contactNumber}
+        </div>
+
+        <div className="flex items-center">
+          <Building className="w-5 h-5 mr-2 text-primary" />
+          Industry: {industry || "IT"}
+        </div>
+
+        {/* 🔹 Created Date */}
+        <div className="flex items-center">
+          <Calendar className="w-5 h-5 mr-2 text-primary" />
+          Created: {new Date(createdAt).toLocaleDateString()}
+        </div>
+        <div className="flex items-center">
+          <Globe className="w-5 h-5 mr-2 text-primary" />
+          Website: {website}
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
 
 };
 
@@ -219,8 +222,13 @@ const CompanyCard: React.FC<{ company: Company }> = ({ company }) => {
 const CompanyList: React.FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [companyList, setCompanyList] = useState<Company[]>([]);
+  // const [companyList, setCompanyList] = useState<Company[]>([]);
   const [recentActivity, setRecentActivity] = useState([]);
+  const dispatch = useAppDispatch();
+  const companyList = useAppSelector((state) => state.company.company);
+  const recentActivities = useAppSelector((state) => state.company.recentActivities);
+
+
 
   const handleGetCompany = async () => {
     if(!user && user?.role !== "super_admin") return;
@@ -228,8 +236,8 @@ const CompanyList: React.FC = () => {
       const res = await getCompanysByDashboard(user?._id);
       console.log(res)
       if (res.status === 200) {
-        setCompanyList(Array.isArray(res.data?.companies) ? res.data?.companies : []);
-        setRecentActivity(Array.isArray(res.data?.recentActivities) ? res.data?.recentActivities : []);
+        dispatch(getCompany(res.data?.companies || []));
+        dispatch(getRecentActivities(res.data?.recentActivities || []));
       }
     } catch (err: any) {
       toast({
@@ -241,8 +249,10 @@ const CompanyList: React.FC = () => {
   };
 
   useEffect(() => {
-    handleGetCompany();
-  }, []);
+    if(user && user?.role === "super_admin" && (companyList.length === 0 || recentActivities.length === 0)){
+      handleGetCompany();
+    }
+  }, [companyList.length, recentActivities.length, user]);
 
   return (
     <div className="space-y-8">
@@ -261,7 +271,7 @@ const CompanyList: React.FC = () => {
         </h2>
 
         <div className="space-y-3  max-h-[400px] overflow-y-auto">
-          {recentActivity?.map((item) => (
+          {recentActivities?.map((item) => (
             <div
               key={item._id}
               className="w-full bg-muted/40 rounded-lg p-4 text-sm flex items-start justify-between"

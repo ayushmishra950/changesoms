@@ -10,12 +10,12 @@ const {
   assignAdmin,
   getCompanyDepartments,
   getCompaniesFromDashboard
-} = require("../controllers/companyController");
+} = require("../controllers/personalOffice/companyController");
 const upload = require("../middleware/upload.js");
 
 // ---------------- Create Company ----------------
 // POST /api/companies/add
-router.post("/add", upload.fields([ { name: "logo", maxCount: 1 }]), addCompany);
+router.post("/add", upload.fields([{ name: "logo", maxCount: 1 }]), addCompany);
 
 // ---------------- Get All Companies ----------------
 // GET /api/companies/
@@ -28,7 +28,7 @@ router.get("/:id", getCompanyById);
 
 // ---------------- Update Company ----------------
 // PUT /api/companies/:id
-router.put("/:id",upload.fields([ { name: "logo", maxCount: 1 }]), updateCompany);
+router.put("/:id", upload.fields([{ name: "logo", maxCount: 1 }]), updateCompany);
 
 // ---------------- Delete Company ----------------
 // DELETE /api/companies/:id

@@ -1,11 +1,11 @@
-const Task = require("../../models/taskModel");
-const SubTask = require("../../models/SubtaskModel");
-const Company = require("../../models/companyModel");
-const { Admin } = require("../../models/authModel");
-const { Employee } = require("../../models/employeeModel");
-const Project = require("../../models/projectModel");
-const recentActivity = require("../../models/recentActivityModel");
-const {sendNotification } = require("../../socketHelpers");
+const Task = require("../../../models/personalOffice/taskModel");
+const SubTask = require("../../../models/personalOffice/SubtaskModel");
+const Company = require("../../../models/personalOffice/companyModel");
+const { Admin } = require("../../../models/personalOffice/authModel");
+const { Employee } = require("../../../models/personalOffice/employeeModel");
+const Project = require("../../../models/personalOffice/projectModel");
+const recentActivity = require("../../../models/personalOffice/recentActivityModel");
+const { sendNotification } = require("../../../socketHelpers");
 
 
 /**
@@ -134,23 +134,23 @@ const createSubTask = async (req, res) => {
       { new: true }
     );
 
-  await sendNotification({
-           createdBy: createdBy,
-         
-           userId: employeeId,
-         
-           userModel: createdByRole === "Admin" ? "Employee" : "Admin", // "Admin" or "Employee"
-         
-           companyId: companyId,
-         
-           message: `New task assigned: ${task.name}`,
-         
-           type: "task",
-         
-           referenceId: task._id
-         });
+    await sendNotification({
+      createdBy: createdBy,
 
-    
+      userId: employeeId,
+
+      userModel: createdByRole === "Admin" ? "Employee" : "Admin", // "Admin" or "Employee"
+
+      companyId: companyId,
+
+      message: `New task assigned: ${task.name}`,
+
+      type: "task",
+
+      referenceId: task._id
+    });
+
+
 
     res.status(201).json({
       success: true,
@@ -171,44 +171,44 @@ const createSubTask = async (req, res) => {
  */
 const getSubTasksByCompany = async (req, res) => {
   try {
-    const { companyId, userId } = req.query; 
+    const { companyId, userId } = req.query;
 
-    const company = await Company.findOne({_id:companyId});
-    if(!company) return res.status(404).json({message:"Company Not Found."});
+    const company = await Company.findOne({ _id: companyId });
+    if (!company) return res.status(404).json({ message: "Company Not Found." });
 
     let user = null;
-     user = await Admin.findOne({_id:userId, companyId});
-     if(!user){
-      user = await Employee.findOne({_id:userId, createdBy:companyId});
-      if(!user){
-        return res.status(404).json({message:"Only admin or manager is allowed"});
+    user = await Admin.findOne({ _id: userId, companyId });
+    if (!user) {
+      user = await Employee.findOne({ _id: userId, createdBy: companyId });
+      if (!user) {
+        return res.status(404).json({ message: "Only admin or manager is allowed" });
       }
-     }
+    }
     let subtasks = [];
-     if(user?.role ==="admin"){
-       subtasks = await SubTask.find({ companyId }).sort({ createdAt: -1 })
-      .populate({
-      path: "taskId",
-      select: "name projectId",
-      populate: { path: "projectId", select: "name" }, // nested populate
-    })
-      .populate("employeeId", "fullName department")
-      .populate("createdBy", "fullName");
-     }
-     else if(user?.taskRole ==="manager"){
-    subtasks = await SubTask.find({createdBy:user?._id, companyId }) .sort({ createdAt: -1 })
-     .populate({
-      path: "taskId",
-      select: "name projectId",
-      populate: { path: "projectId", select: "name" }, // nested populate
-    })
-      .populate("employeeId", "fullName department")
-      .populate("createdBy", "fullName");
-     }
+    if (user?.role === "admin") {
+      subtasks = await SubTask.find({ companyId }).sort({ createdAt: -1 })
+        .populate({
+          path: "taskId",
+          select: "name projectId",
+          populate: { path: "projectId", select: "name" }, // nested populate
+        })
+        .populate("employeeId", "fullName department")
+        .populate("createdBy", "fullName");
+    }
+    else if (user?.taskRole === "manager") {
+      subtasks = await SubTask.find({ createdBy: user?._id, companyId }).sort({ createdAt: -1 })
+        .populate({
+          path: "taskId",
+          select: "name projectId",
+          populate: { path: "projectId", select: "name" }, // nested populate
+        })
+        .populate("employeeId", "fullName department")
+        .populate("createdBy", "fullName");
+    }
 
     //  if(!subtasks?.length) return res.status(404).json({message:"Sub Task Not Found."})
 
-  
+
     res.json({ success: true, data: subtasks });
   } catch (err) {
     res.status(400).json({ success: false, message: err.message });
@@ -222,21 +222,21 @@ const getSubTasksByCompany = async (req, res) => {
  * ✅ GET SUBTASK BY ID
  */
 const getSubTaskById = async (req, res) => {
-    const {subTaskId, companyId, userId} = req.query;
-          
-        let user = null;
-     user = await Admin.findOne({_id:userId, companyId});
-     if(!user){
-      user = await Employee.findOne({_id:userId, createdBy:companyId});
-      if(!user){
-        return res.status(404).json({message:"Only admin or manager is allowed"});
-      }
-     }
+  const { subTaskId, companyId, userId } = req.query;
 
-     const company = await Company.findById(companyId);
-     if(!company) return res.status(404).json({message:"Company Not Found."});
+  let user = null;
+  user = await Admin.findOne({ _id: userId, companyId });
+  if (!user) {
+    user = await Employee.findOne({ _id: userId, createdBy: companyId });
+    if (!user) {
+      return res.status(404).json({ message: "Only admin or manager is allowed" });
+    }
+  }
 
-      if(!subTaskId) return res.status(404).json({message:"Id Not Found"});
+  const company = await Company.findById(companyId);
+  if (!company) return res.status(404).json({ message: "Company Not Found." });
+
+  if (!subTaskId) return res.status(404).json({ message: "Id Not Found" });
   try {
     const subtask = await SubTask.findById(subTaskId)
       .populate("taskId", "companyId projectId managerId name description")
@@ -378,12 +378,12 @@ const subTaskStatusChange = async (req, res) => {
     const company = await Company.findOne({ _id: companyId })
     if (!company) return res.status(404).json({ message: "Company Not Found." });
 
-    let user = await Admin.findOne({_id:userId, companyId});
-    if(!user){
-      user = await Employee.findOne({_id:userId, createdBy:companyId});
-      if(!user) return res.status(404).json({message:"User Not Found.", success:false})
+    let user = await Admin.findOne({ _id: userId, companyId });
+    if (!user) {
+      user = await Employee.findOne({ _id: userId, createdBy: companyId });
+      if (!user) return res.status(404).json({ message: "User Not Found.", success: false })
     }
-  
+
 
     const subtask = await SubTask.findOne({ _id: subTaskId, companyId });
     if (!subtask) throw new Error("Subtask not found");
@@ -391,27 +391,27 @@ const subTaskStatusChange = async (req, res) => {
     subtask.status = status;
     await subtask.save();
 
-      if(subtask?.status==="completed"){
-         await recentActivity.create({title:"Task Completed.", createdBy:user?._id, createdByRole:user?.role==="admin"?"Admin":"Employee", companyId:companyId});
-       
-  await sendNotification({
-           createdBy: user?._id,
-         
-           userId: user?.role ==="admin"?subtask?.employeeId : subtask?.createdBy,
-         
-           userModel: user?.role === "Admin" ? "Employee" : "Admin", // "Admin" or "Employee"
-         
-           companyId: companyId,
-         
-           message: `Task Completed: ${subtask.name}`,
-         
-           type: "task",
-         
-           referenceId: subtask._id
-         });
+    if (subtask?.status === "completed") {
+      await recentActivity.create({ title: "Task Completed.", createdBy: user?._id, createdByRole: user?.role === "admin" ? "Admin" : "Employee", companyId: companyId });
+
+      await sendNotification({
+        createdBy: user?._id,
+
+        userId: user?.role === "admin" ? subtask?.employeeId : subtask?.createdBy,
+
+        userModel: user?.role === "Admin" ? "Employee" : "Admin", // "Admin" or "Employee"
+
+        companyId: companyId,
+
+        message: `Task Completed: ${subtask.name}`,
+
+        type: "task",
+
+        referenceId: subtask._id
+      });
 
 
-          }
+    }
 
     res.json({
       success: true,
@@ -440,7 +440,7 @@ const reassignSubTask = async (req, res) => {
       endDate,
     } = req.body;
     await validateUser(adminId);
-   
+
     const subtask = await SubTask.findOne({ _id: taskId, companyId });
     if (!subtask) throw new Error("Subtask not found");
 
@@ -482,8 +482,8 @@ const deleteSubTask = async (req, res) => {
   try {
     const { subtaskId, companyId, adminId } = req.query;
 
-    const company = await Company.findOne({_id:companyId});
-    if(!company) return res.status(404).json({message:"Company Not Found."})
+    const company = await Company.findOne({ _id: companyId });
+    if (!company) return res.status(404).json({ message: "Company Not Found." })
 
     await validateUser(adminId);
 

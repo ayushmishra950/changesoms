@@ -1,5 +1,5 @@
-const ExpenseCategory = require("../models/expenseCategoryModel.js");
-const  Company  = require("../models/companyModel.js");
+const ExpenseCategory = require("../../models/personalOffice/expenseCategoryModel.js");
+const Company = require("../../models/personalOffice/companyModel.js");
 
 // ---------------- Add Expense Category ----------------
 const addExpenseCategory = async (req, res) => {

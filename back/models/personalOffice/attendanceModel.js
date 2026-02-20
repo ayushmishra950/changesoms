@@ -10,10 +10,10 @@ const AttendanceSchema = new Schema(
     clockOut: { type: String, default: "-" },  // HH:MM
     hoursWorked: { type: Number, default: 0 },
     createdBy: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "Company",
-            required: true,
-          },
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Company",
+      required: true,
+    },
   },
   { timestamps: true }
 );

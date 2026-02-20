@@ -1,6 +1,6 @@
-const { Admin } = require("../../models/authModel.js");
-const { Employee } = require("../../models/employeeModel.js");
-const Company = require("../../models/companyModel.js");
+const { Admin } = require("../../../models/personalOffice/authModel.js");
+const { Employee } = require("../../../models/personalOffice/employeeModel.js");
+const Company = require("../../../models/personalOffice/companyModel.js");
 
 /**
  * Add Manager
@@ -61,17 +61,17 @@ const addManager = async (req, res) => {
     }
 
     // Check if admin is valid
-   let user = await Admin.findOne({ _id: userId, companyId });
+    let user = await Admin.findOne({ _id: userId, companyId });
 
-if (!user) {
-  // Check if manager employee
-  user = await Employee.findOne({ _id: userId, createdBy: companyId });
-  if (!user || user.taskRole !== "manager") {
-    return res.status(403).json({ message: "Only admin or manager is allowed" });
-  }
-}
+    if (!user) {
+      // Check if manager employee
+      user = await Employee.findOne({ _id: userId, createdBy: companyId });
+      if (!user || user.taskRole !== "manager") {
+        return res.status(403).json({ message: "Only admin or manager is allowed" });
+      }
+    }
 
-     
+
 
     // Get managers with only required fields
     const managers = await Employee.find(

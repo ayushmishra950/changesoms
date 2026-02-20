@@ -1,11 +1,11 @@
-const Project = require("../../models/projectModel");
-const Company = require("../../models/companyModel");
-const { Admin } = require("../../models/authModel");
-const Task = require("../../models/taskModel");
-const SubTask = require("../../models/SubtaskModel");
-const { Employee } = require("../../models/employeeModel");
-const recentActivity = require("../../models/recentActivityModel");
-const {sendNotification } = require("../../socketHelpers");
+const Project = require("../../../models/personalOffice/projectModel");
+const Company = require("../../../models/personalOffice/companyModel");
+const { Admin } = require("../../../models/personalOffice/authModel");
+const Task = require("../../../models/personalOffice/taskModel");
+const SubTask = require("../../../models/personalOffice/SubtaskModel");
+const { Employee } = require("../../../models/personalOffice/employeeModel");
+const recentActivity = require("../../../models/personalOffice/recentActivityModel");
+const { sendNotification } = require("../../../socketHelpers");
 
 
 
@@ -70,20 +70,20 @@ const addProject = async (req, res) => {
     await project.save();
 
     await sendNotification({
-               createdBy: adminId,
-             
-               userId: company?.createdBy,
-             
-               userModel: "Admin", // "Admin" or "Employee"
-             
-               companyId: companyId || null,
-             
-               message: `New Project Created: ${project?.name} By Admin ${admin?.username}`,
-             
-               type: "project",
-             
-               referenceId: project._id
-             });
+      createdBy: adminId,
+
+      userId: company?.createdBy,
+
+      userModel: "Admin", // "Admin" or "Employee"
+
+      companyId: companyId || null,
+
+      message: `New Project Created: ${project?.name} By Admin ${admin?.username}`,
+
+      type: "project",
+
+      referenceId: project._id
+    });
 
     return res.status(201).json({
       message: "Project created successfully.",
@@ -294,7 +294,7 @@ const deleteProject = async (req, res) => {
     // 8️⃣ Delete project itself
     await Project.findByIdAndDelete(projectId);
 
-    await recentActivity.create({title:`${Project?.name} Project Deleted.`, createdBy:admin?._id, createdByRole:"Admin", companyId:companyId})
+    await recentActivity.create({ title: `${Project?.name} Project Deleted.`, createdBy: admin?._id, createdByRole: "Admin", companyId: companyId })
 
 
     return res.status(200).json({
@@ -339,24 +339,24 @@ const projectStatusChange = async (req, res) => {
       return res.status(404).json({ message: "Project not found." });
     }
 
-      if(status==="completed"){
-     await recentActivity.create({title:"Project Completed.", createdBy:admin?._id, createdByRole:"Admin", companyId:companyId});
+    if (status === "completed") {
+      await recentActivity.create({ title: "Project Completed.", createdBy: admin?._id, createdByRole: "Admin", companyId: companyId });
       await sendNotification({
-               createdBy: admin?._id,
-             
-               userId: company?.createdBy,
-             
-               userModel: "Admin", // "Admin" or "Employee"
-             
-               companyId: companyId || null,
-             
-               message: ` Project Completed : ${project?.name} By Admin ${admin?.username}`,
-             
-               type: "project",
-             
-               referenceId: project._id
-             });
-      }
+        createdBy: admin?._id,
+
+        userId: company?.createdBy,
+
+        userModel: "Admin", // "Admin" or "Employee"
+
+        companyId: companyId || null,
+
+        message: ` Project Completed : ${project?.name} By Admin ${admin?.username}`,
+
+        type: "project",
+
+        referenceId: project._id
+      });
+    }
 
     return res.status(200).json({ message: "Project Status Updated Successfully." });
   }
@@ -490,7 +490,7 @@ const getDashboardSummary = async (req, res) => {
         endDate: { $lt: today },
         status: { $ne: "completed" },
       });
-     // y naam recent project is liye use kiya hai taki frontend m koi problem na ho 
+      // y naam recent project is liye use kiya hai taki frontend m koi problem na ho 
       const recentProjects = await SubTask.find({ companyId, employeeId: user._id })
         .sort({ createdAt: -1 })
         .limit(4)

@@ -1,6 +1,6 @@
-const { Expense } = require("../models/expenseModel.js");
-const Company = require("../models/companyModel");
-const recentActivity = require("../models/recentActivityModel.js");
+const { Expense } = require("../../models/personalOffice/expenseModel.js");
+const Company = require("../../models/personalOffice/companyModel.js");
+const recentActivity = require("../../models/personalOffice/recentActivityModel.js");
 
 // ---------------- Add Expense ----------------
 const addExpense = async (req, res) => {
@@ -28,8 +28,8 @@ const addExpense = async (req, res) => {
 
     await newExpense.save();
 
-     await recentActivity.create({title:"New Expense Added.", createdBy:userId, createdByRole:"Admin", companyId:companyId})
-    
+    await recentActivity.create({ title: "New Expense Added.", createdBy: userId, createdByRole: "Admin", companyId: companyId })
+
 
     return res.status(201).json({
       message: "Expense added successfully",

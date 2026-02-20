@@ -1,11 +1,11 @@
-const Task = require("../../models/taskModel");
-const Company = require("../../models/companyModel");
-const Project = require("../../models/projectModel");
-const { Admin } = require("../../models/authModel");
-const { Employee } = require("../../models/employeeModel");
-const SubTask = require("../../models/SubtaskModel");
-const recentActivity = require("../../models/recentActivityModel");
-const {sendNotification } = require("../../socketHelpers");
+const Task = require("../../../models/personalOffice/taskModel");
+const Company = require("../../../models/personalOffice/companyModel");
+const Project = require("../../../models/personalOffice/projectModel");
+const { Admin } = require("../../../models/personalOffice/authModel");
+const { Employee } = require("../../../models/personalOffice/employeeModel");
+const SubTask = require("../../../models/personalOffice/SubtaskModel");
+const recentActivity = require("../../../models/personalOffice/recentActivityModel");
+const { sendNotification } = require("../../../socketHelpers");
 
 
 /**
@@ -174,22 +174,22 @@ const createTask = async (req, res) => {
       { new: true }
     );
 
-// ✅ Send notification
-  await sendNotification({
-  createdBy: createdBy,
+    // ✅ Send notification
+    await sendNotification({
+      createdBy: createdBy,
 
-  userId: managerId,
+      userId: managerId,
 
-  userModel: createdByRole, // "Admin" or "Employee"
+      userModel: createdByRole, // "Admin" or "Employee"
 
-  companyId: companyId,
+      companyId: companyId,
 
-  message: `New task assigned: ${task.name}`,
+      message: `New task assigned: ${task.name}`,
 
-  type: "task",
+      type: "task",
 
-  referenceId: task._id
-});
+      referenceId: task._id
+    });
 
 
     res.status(201).json({
@@ -481,24 +481,24 @@ const taskStatusChange = async (req, res) => {
       task.status = status;
       await task.save();
 
-       if(task?.status==="completed"){
-     await recentActivity.create({title:"Task Completed.", createdBy:user?._id, createdByRole:role==="admin"?"Admin":"Employee", companyId:companyId});
+      if (task?.status === "completed") {
+        await recentActivity.create({ title: "Task Completed.", createdBy: user?._id, createdByRole: role === "admin" ? "Admin" : "Employee", companyId: companyId });
 
- await sendNotification({
-  createdBy: user?._id,
+        await sendNotification({
+          createdBy: user?._id,
 
-  userId: user?.role==="admin"?task?.managerId : task?.createdBy,
+          userId: user?.role === "admin" ? task?.managerId : task?.createdBy,
 
-  userModel: user?.role === "admin" ? "Employee" : "Admin", // "Admin" or "Employee"
+          userModel: user?.role === "admin" ? "Employee" : "Admin", // "Admin" or "Employee"
 
-  companyId: companyId,
+          companyId: companyId,
 
-  message: `task Completed: ${task.name}`,
+          message: `task Completed: ${task.name}`,
 
-  type: "task",
+          type: "task",
 
-  referenceId: task._id
-});
+          referenceId: task._id
+        });
 
 
       }
@@ -530,24 +530,24 @@ const taskStatusChange = async (req, res) => {
 
       subTask.status = status;
       await subTask.save();
-      if(subTask?.status==="completed"){
-     await recentActivity.create({title:"Task Completed.", createdBy:user?._id, createdByRole:"Employee", companyId:companyId});
+      if (subTask?.status === "completed") {
+        await recentActivity.create({ title: "Task Completed.", createdBy: user?._id, createdByRole: "Employee", companyId: companyId });
 
-await sendNotification({
-  createdBy: user?._id,
+        await sendNotification({
+          createdBy: user?._id,
 
-  userId: user?.taskRole==="manager" || user?.role==="admin"?subTask?.employeeId : subTask?.createdBy,
+          userId: user?.taskRole === "manager" || user?.role === "admin" ? subTask?.employeeId : subTask?.createdBy,
 
-  userModel: user?.role === "admin" ? "Employee" : "Admin", // "Admin" or "Employee"
+          userModel: user?.role === "admin" ? "Employee" : "Admin", // "Admin" or "Employee"
 
-  companyId: companyId,
+          companyId: companyId,
 
-  message: `Sub Task Completed: ${subTask.name}`,
+          message: `Sub Task Completed: ${subTask.name}`,
 
-  type: "task",
+          type: "task",
 
-  referenceId: subTask._id
-});
+          referenceId: subTask._id
+        });
 
       }
 

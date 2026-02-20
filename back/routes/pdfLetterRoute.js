@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { generateAndUploadLetter, GetAllLetter } = require("../controllers/letterController");
+const { generateAndUploadLetter, GetAllLetter } = require("../controllers/personalOffice/letterController");
 
 /**
  * @swagger

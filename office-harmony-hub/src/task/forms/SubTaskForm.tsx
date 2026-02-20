@@ -1,500 +1,3 @@
-// import React, { useState, useEffect } from "react";
-// import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-// import { Input } from "@/components/ui/input";
-// import { Label } from "@/components/ui/label";
-// import { Button } from "@/components/ui/button";
-// import { Textarea } from "@/components/ui/textarea";
-// import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-// import { AwardIcon, Loader2 } from "lucide-react";
-// import { Priority, Status } from "@/types";
-// import { useAuth } from "@/contexts/AuthContext";
-// import { useToast } from "@/hooks/use-toast";
-// import { getTask, getEmployeebyDepartment, addSubTask, updateSubTask } from "@/services/Service";
-// import { formatDateFromInput } from "@/services/allFunctions";
-// import { SubTaskFormData, SubTaskFormModalProps } from "@/types/index";
-// import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-// import TaskForm from "./TaskForm";
-
-// const SubTaskForm: React.FC<SubTaskFormModalProps> = ({
-//   isOpen,
-//   onClose,
-//   initialData,
-//   setSubTaskListRefresh,
-//   taskId
-// }) => {
-//   const { user } = useAuth();
-//   const { toast } = useToast();
-//   const [taskForm, setTaskForm] = useState<SubTaskFormData>({});
-//   const [loading, setLoading] = useState(false);
-//   const [taskList, setTaskList] = useState([]);
-//   const [employeeList, setEmployeeList] = useState([])
-//   const [startDateTouched, setStartDateTouched] = useState(false);
-//   const [localIsEdit, setLocalIsEdit] = useState(false);
-//   const [confirmOpen, setConfirmOpen] = useState(false);
-//   const [pendingPayload, setPendingPayload] = useState<any>(null);
-//   const [isFormOpen, setIsFormOpen] = useState(false);
-//   const [taskListRefresh, setTaskListRefresh] = useState(false);
-
-
-//   const isEdit = Boolean(initialData);
-//   const today = new Date().toISOString().split("T")[0];
-
-//   useEffect(()=>{
-//     console.log(taskId)
-//     if(taskId){
-//        setTaskForm((prev) => ({ ...prev, taskId: taskId }));
-//     }
-//   }, [taskId])
-//   useEffect(() => {
-//     const initializeForm = async () => {
-//       if (!isOpen) return;
-//       console.log(initialData)
-//       if (initialData?._id || taskId) {
-//         setLocalIsEdit(true);
-
-//         // 1. Pehle Parent Task ki details nikalen API call ke liye
-//         const selectedTaskId = taskId? taskId : initialData.taskId?._id || initialData.taskId;
-//         const selectedTask = taskList.find(t => t._id === selectedTaskId);
-//         console.log(selectedTask, taskList, selectedTaskId)
-
-//         if (!user?.companyId?._id && !user?.createdBy?._id) return;
-
-//         if (selectedTask) {
-//           const obj = {
-//             taskId: selectedTask._id,
-//             department: selectedTask.managerId?.department,
-//             companyId: user?.companyId?._id || user?.createdBy?._id,
-//             adminId: user._id
-//           };
-//           try {
-//             // 2. API Call karke puri list fetch karein (Await karein)
-//             const res = await getEmployeebyDepartment(obj);
-//             console.log(res)
-//             if (res.status === 200) {
-//               setEmployeeList(res.data.data);
-
-//               // 3. JAB LIST AA JAYE, tab form state update karein
-//               setTaskForm({
-//                 _id: initialData._id,
-//                 taskId: selectedTaskId,
-//                 name: initialData.name,
-//                 description: initialData.description,
-//                 startDate: formatDateFromInput(initialData.startDate),
-//                 endDate: formatDateFromInput(initialData.endDate),
-//                 // Ab list ready hai, toh yeh value Select mein show hogi
-//                 employee: initialData.employeeId?._id || initialData.employeeId || "",
-//                 priority: initialData.priority,
-//                 remarks: initialData.remarks
-//               });
-//             }
-//           } catch (err) {
-//             console.error("Error fetching employees on refresh:", err);
-//           }
-//         } else {
-//           // Fallback: Agar task list abhi nahi aayi, toh sirf initial data wala employee list mein daalein
-//           const fallbackEmp = initialData.employeeId ? [initialData.employeeId] : [];
-//           setEmployeeList(fallbackEmp);
-//           // ... setTaskForm logic yahan bhi repeat kar sakte hain
-//         }
-//       } else {
-//         // Create Mode Logic
-//         setLocalIsEdit(false);
-//         setTaskForm({});
-//         setEmployeeList([]);
-//       }
-//     };
-
-//     initializeForm();
-//   }, [isOpen, initialData, taskList, taskId]); // taskList add kiya taaki refresh ke baad list aate hi trigger ho
-
-//   // ---------------------------------------------------
-//   const handleParentTaskChange = async (taskId) => {
-//     if (localIsEdit || initialData?._id) return;
-
-//     const selectedTask = taskList.find(t => t._id === taskId);
-//     if (!selectedTask) return;
-
-//     if ((!user?.companyId?._id && !user?.createdBy?._id) || !user?._id) return;
-
-//     const obj = {
-//       taskId: selectedTask._id,
-//       department: selectedTask.managerId?.department,
-//       companyId: user?.companyId?._id || user?.createdBy?._id,
-//       adminId: user._id
-//     };
-//     try {
-//       const res = await getEmployeebyDepartment(obj);
-//       console.log(res)
-//       if (res.status === 200) {
-//         setEmployeeList(res.data.data);
-//         // Reset employee field on create
-//         if (!isEdit && !initialData) {
-//           setTaskForm(prev => ({ ...prev, taskId: selectedTask._id, employee: "" }));
-//         }
-//       }
-//     } catch (err) {
-//       toast({ title: "Error", description: err.response?.data?.message, variant: "destructive" });
-//     }
-//   };
-
-//   const handleSave = async (e?: React.FormEvent, forceCreate: boolean = false) => {
-//     e?.preventDefault();
-//     const obj = {
-//       _id: initialData?._id,
-//       companyId: user?.companyId?._id || user?.createdBy?._id,
-//       taskId: taskForm?.taskId,
-//       createdBy: user?._id,
-//       createdByRole: user?.role === "admin" ? "Admin" : "Employee",
-//       employeeId: taskForm?.employee,
-//       name: taskForm?.name,
-//       description: taskForm?.description,
-//       remarks: taskForm?.remarks,
-//       startDate: taskForm?.startDate,
-//       endDate: taskForm?.endDate,
-//       priority: taskForm?.priority,
-//       forceCreate,
-//     };
-//     setLoading(true);
-
-//     try {
-//       let res = null;
-//       if (isEdit) {
-//         res = await updateSubTask(obj);
-//       } else {
-//         res = await addSubTask(obj);
-//       }
-
-//       if (res.data?.warning) {
-//         setPendingPayload(obj);
-//         setConfirmOpen(true);
-//         return;
-//       }
-
-//       if (res.status === 200 || res.status === 201) {
-//         // ✅ Success
-//         onClose();
-//         setSubTaskListRefresh(true);
-//         toast({
-//           title: isEdit ? "Update Sub Task Successfully" : "Add Sub Task Successfully",
-//           description: res.data.message,
-//         });
-//       } else {
-//         toast({
-//           title: isEdit ? "Update Sub Task Failed" : "Add Sub Task Failed",
-//           description: res.data.message,
-//         });
-//       }
-//     } catch (err: any) {
-//       console.error(err);
-//       toast({
-//         title: "Error",
-//         description: err.response?.data?.message || err.message,
-//         variant: "destructive",
-//       });
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-
-//   const handleGetTask = async () => {
-//     if (!user?._id || (!user?.companyId?._id && !user?.createdBy?._id)) { return }
-//     let obj = { companyId: user?.companyId?._id || user?.createdBy?._id, adminId: user?._id }
-//     try {
-//       const res = await getTask(obj);
-//       console.log(res)
-//       if (res.status === 200) {
-//         setTaskList(Array.isArray(res?.data?.data) ? res?.data?.data : Object.values(res?.data?.data));
-//       }
-//     }
-//     catch (err) {
-//       console.log(err);
-//       return toast({ title: "Error", description: err.response.data.message, variant: "destructive" })
-//     }
-//   }
-
-//   useEffect(() => {
-//     if (!isOpen) return;
-//     if (!taskList.length || taskListRefresh) handleGetTask();
-//   }, [isOpen, taskListRefresh]);
-
-//   return (
-//     <>
-//       <TaskForm
-//       projectId={null}
-//         isOpen={isFormOpen}
-//         onClose={() => setIsFormOpen(false)}
-//         initialData={null}
-//         setTaskListRefresh={setTaskListRefresh}
-//       />
-
-//       {/* ⚠️ AlertDialog for existing active subtasks */}
-//       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-//         <AlertDialogContent>
-//           <AlertDialogHeader>
-//             <AlertDialogTitle>
-//               Employee already has active tasks
-//             </AlertDialogTitle>
-//             <AlertDialogDescription>
-//               Do you still want to assign this task?
-//             </AlertDialogDescription>
-//           </AlertDialogHeader>
-
-//           <AlertDialogFooter>
-//             <AlertDialogCancel>Cancel</AlertDialogCancel>
-//             <AlertDialogAction
-//               onClick={() => {
-//                 setConfirmOpen(false);
-//                 handleSave(undefined, true); // 🔥 forceCreate
-//               }}
-//             >
-//               Continue
-//             </AlertDialogAction>
-//           </AlertDialogFooter>
-//         </AlertDialogContent>
-//       </AlertDialog>
-
-//       <Dialog open={isOpen} onOpenChange={onClose}>
-//         <DialogContent className="sm:max-w-[650px] max-h-[80vh] sm:max-h-[90vh] overflow-y-auto w-[95vw] pb-6">
-//           <form onSubmit={handleSave}>
-//             <DialogHeader>
-//               <DialogTitle>{isEdit ? "Edit Sub-Task" : "Create New Sub-Task"}</DialogTitle>
-//             </DialogHeader>
-//             <div className="grid gap-4 py-4">
-//               {/* Row: Project & Task Name */}
-//               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-
-//                 <div className="grid gap-2">
-//                   <Label htmlFor="parentTask">Parent Task</Label>
-
-//                   <Select
-//                     value={taskForm?.taskId?.toString() || ""}
-//                     onValueChange={handleParentTaskChange}
-//                     disabled={taskList?.length === 0} // disable if no tasks
-//                   >
-//                     <SelectTrigger id="parentTask" className="h-9 sm:h-10 text-sm">
-//                       <SelectValue placeholder="Select Parent Task" />
-//                     </SelectTrigger>
-
-//                     {taskList?.length > 0 && (
-//                       <SelectContent className="max-h-48 overflow-y-auto">
-//                         {taskList.map((p) => (
-//                           <SelectItem key={p._id} value={p._id} className="cursor-pointer">
-//                             {p.name}
-//                           </SelectItem>
-//                         ))}
-
-//                         {/* Divider + Add New Task button */}
-//                         <div className="border-t my-1" />
-//                         <button
-//                           type="button"
-//                           onClick={() => setIsFormOpen(true)}
-//                           className="w-full text-left px-2 py-1.5 text-sm text-primary hover:bg-muted rounded-sm"
-//                         >
-//                           + Add New Parent Task
-//                         </button>
-//                       </SelectContent>
-//                     )}
-//                   </Select>
-
-//                   {/* Message + Add button if no tasks */}
-//                   {taskList?.length === 0 && (
-//                     <div className="flex items-center justify-between text-xs text-red-500 mt-1">
-//                       <span>Please add a parent task first</span>
-//                       <Button
-//                         type="button"
-//                         size="sm"
-//                         onClick={() => setIsFormOpen(true)}
-//                         className="h-7 px-3 text-xs"
-//                       >
-//                         + Add Task
-//                       </Button>
-//                     </div>
-//                   )}
-//                 </div>
-
-//                 <div className="grid gap-2">
-//                   <Label htmlFor="taskName">Sub Task Name</Label>
-//                   <Input
-//                     id="taskName"
-//                     placeholder="Enter task name"
-//                     value={taskForm?.name || ""}
-//                     onChange={(e) => setTaskForm({ ...taskForm, name: e.target.value })} />
-//                 </div>
-//               </div>
-//               {/* Description */}
-//               <div className="grid gap-2">
-//                 <Label htmlFor="description">Description</Label>
-//                 <Textarea
-//                   id="description"
-//                   placeholder="Enter task description"
-//                   rows={3}
-//                   value={taskForm?.description || ""}
-//                   onChange={(e) => setTaskForm({ ...taskForm, description: e.target.value })} />
-//               </div>
-//               {/* Row: Start Date & End Date */}
-//               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-//                 <div className="grid gap-2">
-//                   <Label htmlFor="startDate">Start Date</Label>
-//                   <Input
-//                     id="startDate"
-//                     type="date"
-//                     value={taskForm?.startDate || ""}
-//                     min={isEdit ? startDateTouched ? today : taskForm?.startDate || today : today}
-//                     onChange={(e) => {
-//                       setStartDateTouched(true);
-//                       setTaskForm({
-//                         ...taskForm, startDate: e.target.value,
-//                         // agar start date change hui aur end date usse chhoti hai to reset
-//                         endDate: taskForm.endDate && e.target.value && taskForm.endDate < e.target.value ? "" : taskForm.endDate
-//                       })
-//                     }} />
-//                 </div>
-//                 <div className="grid gap-2">
-//                   <Label htmlFor="endDate">End Date</Label>
-//                   <Input
-//                     id="endDate"
-//                     type="date"
-//                     value={taskForm?.endDate || ""}
-//                     min={taskForm?.startDate || today}
-//                     disabled={!taskForm?.startDate} // start date ke bina end date disabled
-//                     onChange={(e) => setTaskForm({ ...taskForm, endDate: e.target.value })} />
-//                   {!taskForm?.startDate && (
-//                     <p className="text-xs text-muted-foreground">
-//                       Please select start date first
-//                     </p>
-//                   )}
-//                 </div>
-//               </div>
-//               {/* Row: Manager & Priority */}
-//               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-//                 <div className="grid gap-1">
-//                   <Label htmlFor="manager">Employee</Label>
-//                   <Select
-//                     disabled={!taskForm?.taskId}
-//                     value={taskForm?.employee || ""}
-//                     onValueChange={(value) => setTaskForm({ ...taskForm, employee: value })}>
-//                     <SelectTrigger id="manager">
-//                       <SelectValue placeholder="Select Employee" />
-//                     </SelectTrigger>
-//                     <SelectContent>
-//                       {employeeList.map(emp => (
-//                         <SelectItem key={emp._id} value={emp._id} className="cursor-pointer" disabled={emp?.taskRole === "manager"}>
-//                           {emp.fullName} ({emp.department}) {emp.taskRole === "manager" ? "Manager" : ""}
-//                         </SelectItem>
-//                       ))}
-//                     </SelectContent>
-//                   </Select>
-//                   {!taskForm?.taskId && (
-//                     <p className="text-xs text-muted-foreground">
-//                       Please select parent task first
-//                     </p>
-//                   )}
-//                 </div>
-//                 <div className="grid gap-2">
-//                   <Label htmlFor="priority">Priority</Label>
-//                   <Select
-//                     value={taskForm?.priority || "low"}
-//                     onValueChange={(value) => setTaskForm({ ...taskForm, priority: value as Priority })} >
-//                     <SelectTrigger id="priority">
-//                       <SelectValue placeholder="Select Priority" />
-//                     </SelectTrigger>
-//                     <SelectContent>
-//                       <SelectItem value="low" className="cursor-pointer">Low</SelectItem>
-//                       <SelectItem value="medium" className="cursor-pointer">Medium</SelectItem>
-//                       <SelectItem value="high" className="cursor-pointer">High</SelectItem>
-//                       <SelectItem value="urgent" className="cursor-pointer">Urgent</SelectItem>
-//                     </SelectContent>
-//                   </Select>
-//                 </div>
-//               </div>
-//               {/* Remarks */}
-//               <div className="grid gap-2">
-//                 <Label htmlFor="remarks">Remarks</Label>
-//                 <Textarea
-//                   id="remarks"
-//                   placeholder="Additional comments or remarks"
-//                   rows={2}
-//                   value={taskForm?.remarks || ""}
-//                   onChange={(e) => setTaskForm({ ...taskForm, remarks: e.target.value })} />
-//               </div>
-//             </div>
-
-//             <DialogFooter className="flex-col-reverse sm:flex-row gap-2 sticky bottom-0 bg-white pt-4">
-//               <Button type="button" variant="outline" onClick={onClose} disabled={loading} className="w-full sm:w-auto">
-//                 Cancel
-//               </Button>
-//               <Button
-//                 disabled={loading || !taskForm?.name || !taskForm?.description || !taskForm?.startDate || !taskForm?.endDate || !taskForm?.employee || !taskForm?.priority || !taskForm?.remarks}
-//                 className="w-full sm:w-auto" >
-//                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-//                 {isEdit ? "Update Sub-Task" : "Create Sub-Task"}
-//               </Button>
-//             </DialogFooter>
-//           </form>
-//         </DialogContent>
-//       </Dialog>
-//     </>
-//   );
-// };
-
-// export default SubTaskForm;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 import React, { useState, useEffect, useRef } from "react";
@@ -533,11 +36,11 @@ const SubTaskForm: React.FC<SubTaskFormModalProps> = ({
   const [pendingPayload, setPendingPayload] = useState<any>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [taskListRefresh, setTaskListRefresh] = useState(false);
-    const [taskDates, setTaskDates] = useState<{ startDate?: string; endDate?: string }>({});
-   const [isDialogOpen, setIsDialogOpen] = useState(false);
-   const [employeeListRefresh, setEmployeeListRefresh] = useState(false);
-   const startDateRef = useRef(null);
-   const endDateRef = useRef(null);
+  const [taskDates, setTaskDates] = useState<{ startDate?: string; endDate?: string }>({});
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [employeeListRefresh, setEmployeeListRefresh] = useState(false);
+  const startDateRef = useRef(null);
+  const endDateRef = useRef(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [showScrollArrow, setShowScrollArrow] = useState(false);
 
@@ -643,10 +146,10 @@ const SubTaskForm: React.FC<SubTaskFormModalProps> = ({
       if (res.status === 200) {
         setEmployeeList(res.data.data || []);
         setTaskForm(prev => ({ ...prev, taskId: selectedTaskId, employee: "" }));
-         setTaskDates({
-                                startDate: formatDateFromInput(selectedTask?.startDate),
-                                endDate: formatDateFromInput(selectedTask?.endDate),
-                              });
+        setTaskDates({
+          startDate: formatDateFromInput(selectedTask?.startDate),
+          endDate: formatDateFromInput(selectedTask?.endDate),
+        });
 
       }
     } catch (err: any) {
@@ -735,13 +238,13 @@ const SubTaskForm: React.FC<SubTaskFormModalProps> = ({
   return (
     <>
       <EmployeeFormDialog
-            open={isDialogOpen}
-            onClose={() => { setIsDialogOpen(false) }}
-            isEditMode={false}
-            initialData={null}
-            setEmployeeListRefresh={setEmployeeListRefresh}
-            selectedDepartmentName={""} //blank hai kyuki y sirf department k case m use hoga
-          />
+        open={isDialogOpen}
+        onClose={() => { setIsDialogOpen(false) }}
+        isEditMode={false}
+        initialData={null}
+        setEmployeeListRefresh={setEmployeeListRefresh}
+        selectedDepartmentName={""} //blank hai kyuki y sirf department k case m use hoga
+      />
 
       <TaskForm
         projectId={null}
@@ -862,8 +365,8 @@ const SubTaskForm: React.FC<SubTaskFormModalProps> = ({
                   <Input
                     id="startDate"
                     type="date"
-                     ref={startDateRef}
-                   onClick={()=>{if(startDateRef.current?.showPicker){startDateRef.current.showPicker()}}}   
+                    ref={startDateRef}
+                    onClick={() => { if (startDateRef.current?.showPicker) { startDateRef.current.showPicker() } }}
                     min={taskDates?.startDate}
                     max={taskDates?.endDate}
                     value={taskForm?.startDate || ""}
@@ -888,8 +391,8 @@ const SubTaskForm: React.FC<SubTaskFormModalProps> = ({
                   <Input
                     id="endDate"
                     type="date"
-                     ref={endDateRef}
-                   onClick={()=>{if(endDateRef.current?.showPicker){endDateRef.current.showPicker()}}}   
+                    ref={endDateRef}
+                    onClick={() => { if (endDateRef.current?.showPicker) { endDateRef.current.showPicker() } }}
                     min={taskForm?.startDate || taskDates?.startDate}
                     max={taskDates?.endDate}
                     disabled={!taskForm?.startDate}
@@ -939,84 +442,84 @@ const SubTaskForm: React.FC<SubTaskFormModalProps> = ({
                   )}
                 </div> */}
 
-              <div className="grid gap-1.5">
-  <Label htmlFor="employee" className="text-sm font-medium">
-    Employee
-  </Label>
+                <div className="grid gap-1.5">
+                  <Label htmlFor="employee" className="text-sm font-medium">
+                    Employee
+                  </Label>
 
-  <Select
-    disabled={!taskForm?.taskId}
-    value={taskForm?.employee || ""}
-    onValueChange={(value) =>
-      setTaskForm({ ...taskForm, employee: value })
-    }
-    required
-  >
-    <SelectTrigger className="h-9 text-sm">
-      <SelectValue placeholder="Select Employee" />
-    </SelectTrigger>
+                  <Select
+                    disabled={!taskForm?.taskId}
+                    value={taskForm?.employee || ""}
+                    onValueChange={(value) =>
+                      setTaskForm({ ...taskForm, employee: value })
+                    }
+                    required
+                  >
+                    <SelectTrigger className="h-9 text-sm">
+                      <SelectValue placeholder="Select Employee" />
+                    </SelectTrigger>
 
-    <SelectContent>
-      {employeeList.length > 0 ? (
-        <>
-          {employeeList.map((emp) => (
-            <SelectItem
-              key={emp._id}
-              value={emp._id}
-              disabled={emp?.taskRole === "manager"}
-            >
-              {emp.fullName} ({emp.department})
-              {emp.taskRole === "manager" ? " • Manager" : ""}
-            </SelectItem>
-          ))}
+                    <SelectContent>
+                      {employeeList.length > 0 ? (
+                        <>
+                          {employeeList.map((emp) => (
+                            <SelectItem
+                              key={emp._id}
+                              value={emp._id}
+                              disabled={emp?.taskRole === "manager"}
+                            >
+                              {emp.fullName} ({emp.department})
+                              {emp.taskRole === "manager" ? " • Manager" : ""}
+                            </SelectItem>
+                          ))}
 
-          {/* Add More button inside dropdown */}
-        { user?.role === "admin" &&  <div className="px-2 py-1">
-            <button
-              type="button"
-              className="w-full text-xs text-center text-blue-600 hover:underline"
-              onClick={() => {
-               setIsDialogOpen(true);
-              }}
-            >
-              + Add More Employee
-            </button>
-          </div>}
-        </>
-      ) : (
-        taskForm?.taskId && (
-          <div className="px-2 py-2 text-xs text-muted-foreground">
-            No employees found for this task
-          </div>
-        )
-      )}
-    </SelectContent>
-  </Select>
+                          {/* Add More button inside dropdown */}
+                          {user?.role === "admin" && <div className="px-2 py-1">
+                            <button
+                              type="button"
+                              className="w-full text-xs text-center text-blue-600 hover:underline"
+                              onClick={() => {
+                                setIsDialogOpen(true);
+                              }}
+                            >
+                              + Add More Employee
+                            </button>
+                          </div>}
+                        </>
+                      ) : (
+                        taskForm?.taskId && (
+                          <div className="px-2 py-2 text-xs text-muted-foreground">
+                            No employees found for this task
+                          </div>
+                        )
+                      )}
+                    </SelectContent>
+                  </Select>
 
-  {/* Show message + Add button only if task selected AND no employees */}
-  {taskForm?.taskId && employeeList.length === 0 && (
-    <div className="flex items-center justify-between mt-1">
-      <p className="text-xs text-muted-foreground">
-        No employees available for selected task
-      </p>
-    { user?.role === "admin" && <button
-        type="button"
-        className="text-xs text-blue-600 hover:underline"
-        onClick={() => {
-         setIsDialogOpen(true);
-        }}
-      >
-        + Add Employee
-      </button>}
-    </div>
-  )}
+                  {/* Show message + Add button only if task selected AND no employees */}
+                  {taskForm?.taskId && employeeList.length === 0 && (
+                    <div className="flex items-center justify-between mt-1">
+                      <p className="text-xs text-muted-foreground">
+                        No employees available for selected task
+                      </p>
+                      {user?.role === "admin" && <button
+                        type="button"
+                        className="text-xs text-blue-600 hover:underline"
+                        onClick={() => {
+                          setIsDialogOpen(true);
+                        }}
+                      >
+                        + Add Employee
+                      </button>}
+                    </div>
+                  )}
 
-  {!taskForm?.taskId && (
-    <p className="text-xs text-muted-foreground mt-1">
-      Select parent task first
-    </p>
-  )}
-</div>
+                  {!taskForm?.taskId && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Select parent task first
+                    </p>
+                  )}
+                </div>
 
 
                 <div className="grid gap-1.5">

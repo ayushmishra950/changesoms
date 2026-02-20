@@ -235,7 +235,8 @@ export const JobSubMenu = [
   { label: 'Companys', path: '/jobs/companys', roles: ["admin", "manager", "employee"] },
   { label: 'Jobs', path: '/jobs/jobs', roles: ["admin", "manager"] },
   { label: 'Revenue', path: '/jobs/revenues', roles: ["admin", "manager", "employee"] },
-  { label: "Setting", path: "/jobs/setting", roles: ["admin"] }
+  { label: "Setting", path: "/jobs/setting", roles: ["admin"] },
+  { label: "Roles", path: "/jobs/roles", roles: ["admin"] }
 ];
 
 
@@ -465,6 +466,15 @@ export const headingManage = (path: string, role: string) => {
         description:
           "Configure portal preferences, permissions, and system-level configurations.",
         icon: "Settings",
+      };
+    }
+
+    if (path === "/jobs/roles") {
+      return {
+        title: "Roles",
+        description:
+          "Manage roles.",
+        icon: "User",
       };
     }
     return {

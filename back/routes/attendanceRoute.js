@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const attendanceController = require("../controllers/attendanceController");
+const attendanceController = require("../controllers/personalOffice/attendanceController");
 // const { authMiddleware } = require("../middlewares/auth");
 
 // Get attendance (Admin: all, Employee: self)
@@ -16,3 +16,5 @@ router.get("/attendancebyday", attendanceController.getAttendanceByDay);
 router.patch("/update/attendance", attendanceController.updateAttendanceByDay);
 
 module.exports = router;
+
+

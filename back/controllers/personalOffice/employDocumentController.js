@@ -1,11 +1,11 @@
-const uploadToCloudinary = require("../cloudinary/uploadToCloudinary.js");
-const  EmployeeDocument = require("../models/employDocumentModel.js")
+const uploadToCloudinary = require("../../cloudinary/uploadToCloudinary.js");
+const EmployeeDocument = require("../../models/personalOffice/employDocumentModel.js")
 
 // 1️⃣ GENERATE / ISSUE DOCUMENT (COMMON FUNCTION)
 
 // 👉 Salary Slip / Offer / NOC / Letter sab isi se banenge
 
- const generateEmployeeDocument = async (req, res) => {
+const generateEmployeeDocument = async (req, res) => {
   try {
     const {
       employeeId,
@@ -67,7 +67,7 @@ const  EmployeeDocument = require("../models/employDocumentModel.js")
 
 // 👉 Same month ki duplicate salary slip block karega
 
- const generateSalarySlip = async (req, res) => {
+const generateSalarySlip = async (req, res) => {
   try {
     const { employeeId, month, year, salaryAmount } = req.body;
 
@@ -184,7 +184,7 @@ const getEmployeeDocumentsByType = async (req, res) => {
 // 👉 Employee ko kitne months salary mil chuki hai + total slips
 
 
- const getSalarySummary = async (req, res) => {
+const getSalarySummary = async (req, res) => {
   try {
     const { employeeId } = req.params;
 
@@ -220,4 +220,4 @@ const getEmployeeDocumentsByType = async (req, res) => {
 
 
 
-module.exports = {generateEmployeeDocument, generateSalarySlip, getEmployeeDocuments, getEmployeeDocumentsByType, getSalarySummary};
+module.exports = { generateEmployeeDocument, generateSalarySlip, getEmployeeDocuments, getEmployeeDocumentsByType, getSalarySummary };

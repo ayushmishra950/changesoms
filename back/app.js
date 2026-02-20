@@ -22,6 +22,9 @@ const companyRoutes = require("./routes/companyRoutes.js");
 const taskRoutes = require("./routes/taskRoutes.js");
 const authMiddleware = require("./middleware/authMiddleware.js");
 
+// job-portal k liye
+const roleRoutes = require("./routes/job-portal-route/roleRoute.js");
+
 const swaggerSpec = require("./swagger");
 const { initSocket } = require("./socketHelpers.js"); // ✅ import only initSocket
 const cookieParser = require("cookie-parser")
@@ -61,6 +64,9 @@ app.use("/api/attendance", attendanceRoutes);
 app.use("/api/payRollRoutes", payRollRoutes);
 app.use("/api/company", companyRoutes);
 app.use("/api/task", taskRoutes);
+
+// job-portal k liye
+app.use("/api/role", roleRoutes);
 
 // Test route
 app.get("/", (req, res) => {

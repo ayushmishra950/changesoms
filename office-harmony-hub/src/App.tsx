@@ -35,6 +35,7 @@ import CompaniesPage from "./job-portal/CompaniesPage";
 import JobsPage from "./job-portal/JobsPage";
 import RevenuePage from "./job-portal/RevenuePage";
 import SettingsPage from "./job-portal/SettingsPage";
+import RolePage from "./job-portal/RolePage";
 
 // global.d.ts
 export { };
@@ -109,6 +110,7 @@ const AppRoutes = () => {
           <Route path="jobs" element={<JobsPage />} />
           <Route path="revenues" element={<RevenuePage />} />
           <Route path="setting" element={<SettingsPage />} />
+          <Route path="roles" element={<RolePage />} />
         </Route>
 
       </Route>

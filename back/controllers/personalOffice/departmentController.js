@@ -1,6 +1,6 @@
-const Department = require("../models/departmentModel.js");
-const { Admin } = require("../models/authModel.js");
-const { Employee } = require("../models/employeeModel.js"); // adjust path if needed
+const Department = require("../../models/personalOffice/departmentModel.js");
+const { Admin } = require("../../models/personalOffice/authModel.js");
+const { Employee } = require("../../models/personalOffice/employeeModel.js"); // adjust path if needed
 
 // ---------------- Add Department ----------------
 const addDepartment = async (req, res) => {
@@ -115,7 +115,7 @@ const updateDepartment = async (req, res) => {
 const updateEmployeeByDepartment = async (req, res) => {
   try {
     const { companyId, adminId, employeeId, departmentName } = req.body;
-    if(!companyId || !adminId || !employeeId || !departmentName) return res.status(400).json({message:"required field missing."})
+    if (!companyId || !adminId || !employeeId || !departmentName) return res.status(400).json({ message: "required field missing." })
 
     const admin = await Admin.findOne({ _id: adminId, companyId });
     if (!admin) return res.status(403).json({ message: "You are not Authorized." });
@@ -127,7 +127,7 @@ const updateEmployeeByDepartment = async (req, res) => {
 
     employee.save();
 
-    res.status(200).json({data:employee, message: "Employee’s department has been successfully updated." });
+    res.status(200).json({ data: employee, message: "Employee’s department has been successfully updated." });
 
   } catch (err) {
     console.error(err);

@@ -1,8 +1,8 @@
-const PayRoll = require("../models/payRollModel");
-const Department = require("../models/departmentModel");
-const Company = require("../models/companyModel"); // company model
-const { EmployeeHistory } = require("../models/EmployeeHistoryModel.js");
-const { Employee } = require("../models/employeeModel.js"); // adjust path if needed
+const PayRoll = require("../../models/personalOffice/payRollModel.js");
+const Department = require("../../models/personalOffice/departmentModel.js");
+const Company = require("../../models/personalOffice/companyModel.js"); // company model
+const { EmployeeHistory } = require("../../models/personalOffice/EmployeeHistoryModel.js");
+const { Employee } = require("../../models/personalOffice/employeeModel.js"); // adjust path if needed
 
 // Admin: Create a new salary record
 const createSalary = async (req, res) => {
@@ -19,10 +19,10 @@ const createSalary = async (req, res) => {
     if (!company) {
       return res.status(404).json({ message: "Company not found" });
     }
-        const employee = await Employee.findOne({_id:employeeId, createdBy:companyId});
-        if(!employee) return res.status(404).json({message:"Employee Not Found."})
-        
-        if(employee?.status === "RELIEVED") return res.status(403).json({message : "Employee has already been relieved from the company."})
+    const employee = await Employee.findOne({ _id: employeeId, createdBy: companyId });
+    if (!employee) return res.status(404).json({ message: "Employee Not Found." })
+
+    if (employee?.status === "RELIEVED") return res.status(403).json({ message: "Employee has already been relieved from the company." })
 
     // 3️⃣ Find department by name
     const department = await Department.findOne({ name: departmentName.trim() });

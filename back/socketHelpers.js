@@ -1,5 +1,5 @@
 const { Server } = require("socket.io");
-const Notification = require("./models/NotificationModel"); // Notification model
+const Notification = require("./models/personalOffice/NotificationModel"); // Notification model
 
 let io;
 
@@ -37,25 +37,25 @@ function initSocket(server) {
  */
 
 
-async function sendNotification({createdBy,userId, userModel, companyId, message, type = "general", referenceId = null}) {
+async function sendNotification({ createdBy, userId, userModel, companyId, message, type = "general", referenceId = null }) {
   if (!io) return console.error("Socket.io not initialized");
-  console.log(createdBy , userId ,userModel ,companyId ,message ,type ,referenceId, )
+  console.log(createdBy, userId, userModel, companyId, message, type, referenceId,)
   // if(!createdBy || !userId ||!userModel || !companyId || !message || !type ||  !referenceId) return {message : " required field missing."}
-   
+
   try {
     // 1️⃣ Save in MongoDB
-   const notificationDoc = await Notification.create({
-  userId,
-  userModel,   // required
-  companyId,   // required
-  message,
-  type,
-  referenceId,
-  createdBy
-});
+    const notificationDoc = await Notification.create({
+      userId,
+      userModel,   // required
+      companyId,   // required
+      message,
+      type,
+      referenceId,
+      createdBy
+    });
 
-// Populate createdBy for frontend display
-const notification = await notificationDoc.populate("createdBy");
+    // Populate createdBy for frontend display
+    const notification = await notificationDoc.populate("createdBy");
 
 
     // 2️⃣ Emit via socket to the user

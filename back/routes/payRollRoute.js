@@ -1,6 +1,6 @@
-const epxress = require("express"); 
+const epxress = require("express");
 const router = epxress.Router();
-const payRollController = require("../controllers/payRollController");
+const payRollController = require("../controllers/personalOffice/payRollController");
 
 router.post("/add", payRollController.createSalary); // Admin: Create a new salary record
 router.get("/get", payRollController.getAllSalaries); // Admin: Get all salary records

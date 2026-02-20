@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -10,7 +10,10 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetFo
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Search, Filter, MoreHorizontal, Mail, Phone, MapPin, Briefcase, FileText, CheckCircle2, XCircle, Clock, Calendar, Download, Users, Linkedin, Github } from "lucide-react";
 import { Helmet } from "react-helmet-async";
-import AddCandidateForm from "@/job-portal/forms/CandidateDialog";
+import RoleDialog from "@/job-portal/forms/RoleDialog";
+import { getAllRole } from "@/services/Service";
+import { useAppDispatch, useAppSelector } from "@/redux-toolkit/hooks/hook";
+import { getRoles } from "@/redux-toolkit/slice/job-portal/roleSlice";
 
 // Mock Data
 const candidatesData = [
@@ -100,26 +103,27 @@ const candidatesData = [
   },
 ];
 
-const CandidatesPage: React.FC = () => {
+const RolePage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState("All");
-  const [roleFilter, setRoleFilter] = useState("All");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [roleFilter, setRoleFilter] = useState("all");
   const [selectedCandidate, setSelectedCandidate] = useState<any>(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
-  const [isCandidateFormOpen, setIsCandidateFormOpen] = useState(false);
-
+  const [isRoleFormOpen, setIsRoleFormOpen] = useState(false);
+  const [roleListRefresh, setRoleListRefresh] = useState(false);
+  const dispatch = useAppDispatch();
+  const roleList = useAppSelector((state) => state?.role?.roles);
+  console.log(roleList)
   // Filter Logic
-  const filteredCandidates = candidatesData.filter((candidate) => {
+  const filteredRoles = roleList?.filter((role) => {
     const matchesSearch =
-      candidate.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      candidate.email.toLowerCase().includes(searchQuery.toLowerCase());
+      role.name.toLowerCase().includes(searchQuery.toLowerCase())
     const matchesStatus =
-      statusFilter === "All" || candidate.status === statusFilter;
-    const matchesRole = roleFilter === "All" || candidate.role === roleFilter;
+      statusFilter === "all" || role.status === true ? "active" : "inactive" === statusFilter;
 
-    return matchesSearch && matchesStatus && matchesRole;
+    return matchesSearch && matchesStatus;
   });
-
+  console.log(filteredRoles)
   // Unique Roles for Filter
   const uniqueRoles = Array.from(
     new Set(candidatesData.map((c) => c.role))
@@ -147,15 +151,32 @@ const CandidatesPage: React.FC = () => {
     setIsSheetOpen(true);
   };
 
+  const getAllRoles = async () => {
+    try {
+      const res = await getAllRole();
+      console.log(res);
+      dispatch(getRoles(res?.data?.data));
+      setRoleListRefresh(false);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  useEffect(() => {
+    if (roleList?.length === 0 || roleListRefresh) {
+      getAllRoles();
+    }
+  }, [roleList?.length, roleListRefresh]);
+
   return (
     <>
-      <AddCandidateForm
-        isOpen={isCandidateFormOpen}
-        onClose={() => { setIsCandidateFormOpen(false) }}
+      <RoleDialog
+        isOpen={isRoleFormOpen}
+        onClose={() => { setIsRoleFormOpen(false) }}
       />
 
       <Helmet>
-        <title>Candidates | Job Portal</title>
+        <title>Roles | Job Portal</title>
       </Helmet>
 
       <div className="flex flex-col min-h-screen bg-gray-50/40 p-6 space-y-6">
@@ -163,26 +184,23 @@ const CandidatesPage: React.FC = () => {
         {/* Page Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight text-gray-900">Candidates</h1>
+            <h1 className="text-3xl font-bold tracking-tight text-gray-900">Roles</h1>
             <p className="text-muted-foreground mt-1">
-              Manage and track candidate applications.
+              Manage Roles And Permissions.
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" className="gap-2">
-              <Download className="h-4 w-4" /> Export
-            </Button>
-            <Button onClick={() => { setIsCandidateFormOpen(true) }} className="gap-2 bg-blue-600 hover:bg-blue-700">
-              <Briefcase className="h-4 w-4" /> Add Candidate
+            <Button onClick={() => { setIsRoleFormOpen(true) }} className="gap-2 bg-blue-600 hover:bg-blue-700">
+              <Briefcase className="h-4 w-4" /> Add Role
             </Button>
           </div>
         </div>
 
         {/* Status Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <Card className="items-center p-4 flex justify-between shadow-sm">
             <div>
-              <p className="text-sm font-medium text-muted-foreground">Total Candidates</p>
+              <p className="text-sm font-medium text-muted-foreground">Total Roles</p>
               <h3 className="text-2xl font-bold mt-1">1,250</h3>
             </div>
             <div className="h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
@@ -191,7 +209,7 @@ const CandidatesPage: React.FC = () => {
           </Card>
           <Card className="items-center p-4 flex justify-between shadow-sm">
             <div>
-              <p className="text-sm font-medium text-muted-foreground">Shortlisted</p>
+              <p className="text-sm font-medium text-muted-foreground">Active Roles</p>
               <h3 className="text-2xl font-bold mt-1">340</h3>
             </div>
             <div className="h-10 w-10 bg-purple-100 rounded-full flex items-center justify-center">
@@ -200,20 +218,11 @@ const CandidatesPage: React.FC = () => {
           </Card>
           <Card className="items-center p-4 flex justify-between shadow-sm">
             <div>
-              <p className="text-sm font-medium text-muted-foreground">In Review</p>
+              <p className="text-sm font-medium text-muted-foreground">In Active</p>
               <h3 className="text-2xl font-bold mt-1">85</h3>
             </div>
             <div className="h-10 w-10 bg-amber-100 rounded-full flex items-center justify-center">
               <Clock className="h-5 w-5 text-amber-600" />
-            </div>
-          </Card>
-          <Card className="items-center p-4 flex justify-between shadow-sm">
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Hired</p>
-              <h3 className="text-2xl font-bold mt-1">45</h3>
-            </div>
-            <div className="h-10 w-10 bg-green-100 rounded-full flex items-center justify-center">
-              <Briefcase className="h-5 w-5 text-green-600" />
             </div>
           </Card>
         </div>
@@ -250,13 +259,9 @@ const CandidatesPage: React.FC = () => {
                     <SelectValue placeholder="All Status" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="All">All Status</SelectItem>
-                    <SelectItem value="New">New</SelectItem>
-                    <SelectItem value="In Review">In Review</SelectItem>
-                    <SelectItem value="Shortlisted">Shortlisted</SelectItem>
-                    <SelectItem value="Interview">Interview</SelectItem>
-                    <SelectItem value="Hired">Hired</SelectItem>
-                    <SelectItem value="Rejected">Rejected</SelectItem>
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="inActive">In Active</SelectItem>
                   </SelectContent>
                 </Select>
                 <Button variant="outline" size="icon" title="Reset Filters" onClick={() => { setStatusFilter('All'); setRoleFilter('All'); setSearchQuery('') }}>
@@ -273,55 +278,30 @@ const CandidatesPage: React.FC = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Candidate</TableHead>
-                  <TableHead>Role Applied</TableHead>
-                  <TableHead>Date Applied</TableHead>
+                  <TableHead>Role Name</TableHead>
+                  <TableHead>Description</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead className="text-right">Candidates</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredCandidates.length > 0 ? (
-                  filteredCandidates.map((candidate) => (
-                    <TableRow key={candidate.id} className="cursor-pointer hover:bg-muted/50" onClick={() => openCandidateDetails(candidate)}>
+                {filteredRoles?.length > 0 ? (
+                  filteredRoles.map((role) => (
+                    <TableRow key={role._id} className="hover:bg-muted/50">
+                      <TableCell>{role.name}</TableCell>
+                      <TableCell>{role.description}</TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-3">
-                          <Avatar>
-                            <AvatarImage src={candidate.avatar} alt={candidate.name} />
-                            <AvatarFallback>{candidate.name.substring(0, 2).toUpperCase()}</AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <div className="font-medium">{candidate.name}</div>
-                            <div className="text-xs text-muted-foreground">{candidate.email}</div>
-                          </div>
-                        </div>
+                        <span className={`px-2 py-1 text-xs rounded-full ${role.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                          {role.isActive ? 'Active' : 'Inactive'}
+                        </span>
                       </TableCell>
-                      <TableCell>{candidate.role}</TableCell>
-                      <TableCell>{candidate.appliedDate}</TableCell>
-                      <TableCell>{getStatusBadge(candidate.status)}</TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0">
-                              <span className="sr-only">Open menu</span>
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); openCandidateDetails(candidate) }}>View Profile</DropdownMenuItem>
-                            <DropdownMenuItem onClick={(e) => e.stopPropagation()}>Schedule Interview</DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem className="text-red-600" onClick={(e) => e.stopPropagation()}>Reject</DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
+                      <TableCell className="text-right">{role.candidateCount || 0}</TableCell>
                     </TableRow>
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                      No candidates found matching your filters.
+                    <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                      No roles found matching your filters.
                     </TableCell>
                   </TableRow>
                 )}
@@ -329,7 +309,6 @@ const CandidatesPage: React.FC = () => {
             </Table>
           </CardContent>
         </Card>
-
       </div>
 
       {/* Candidate Details Sheet */}
@@ -413,4 +392,4 @@ const CandidatesPage: React.FC = () => {
   );
 };
 
-export default CandidatesPage;
+export default RolePage;

@@ -1,12 +1,12 @@
 
-const Attendance = require("../models/attendanceModel");
+const Attendance = require("../../models/personalOffice/attendanceModel.js");
 const mongoose = require("mongoose");
-const PayRoll = require("../models/payRollModel");
-const Company = require("../models/companyModel");
-const { sendNotification } = require("../socketHelpers");
-const { Employee } = require("../models/employeeModel");
-const recentActivity = require("../models/recentActivityModel.js");
-const { Admin } = require("../models/authModel.js");
+const PayRoll = require("../../models/personalOffice/payRollModel.js");
+const Company = require("../../models/personalOffice/companyModel.js");
+const { sendNotification } = require("../../socketHelpers.js");
+const { Employee } = require("../../models/personalOffice/employeeModel.js");
+const recentActivity = require("../../models/personalOffice/recentActivityModel.js");
+const { Admin } = require("../../models/personalOffice/authModel.js");
 const cron = require("node-cron");
 
 // ---------------- Helper ----------------

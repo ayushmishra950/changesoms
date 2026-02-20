@@ -8,7 +8,7 @@ const {
   updateDepartment,
   deleteDepartment,
   updateEmployeeByDepartment
-} = require("../controllers/departmentController.js");
+} = require("../controllers/personalOffice/departmentController.js");
 
 /**
  * @swagger

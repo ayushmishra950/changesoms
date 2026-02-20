@@ -1,7 +1,7 @@
 
 const express = require("express");
-const { registerAdmin, updateAdmin, deleteAdmin, loginAdmin,getUserById, updateUser,changePassword,
-  getAllAdmins, adminStatusChange,refresh,getUserWeeklyAttendanceReport, getDashboardSummary, analyticsReport, getNotificationData, deleteNotifications, deleteAllNotifications } = require("../controllers/authController");
+const { registerAdmin, updateAdmin, deleteAdmin, loginAdmin, getUserById, updateUser, changePassword,
+  getAllAdmins, adminStatusChange, refresh, getUserWeeklyAttendanceReport, getDashboardSummary, analyticsReport, getNotificationData, deleteNotifications, deleteAllNotifications } = require("../controllers/personalOffice/authController");
 
 const router = express.Router();
 

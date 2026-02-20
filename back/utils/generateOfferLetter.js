@@ -1,5 +1,5 @@
-const { Employee } = require('../models/employeeModel');
-const Letter = require('../models/Letter');
+const { Employee } = require('../models/personalOffice/employeeModel');
+const Letter = require('../models/personalOffice/Letter');
 const PDFDocument = require('pdfkit');
 
 async function generateOfferLetter(employeeId, letterType) {
@@ -25,7 +25,7 @@ async function generateOfferLetter(employeeId, letterType) {
 A Unit of Infonic Consultancy Services Pvt Ltd
 H.O: 2nd Floor, Krishna Tower, Heera Nagar Mode,
 DCM, Ajmer Rd. Jaipur`;
-doc.fontSize(9).text(companyInfo, 30, 15, { align: 'right', width: doc.page.width - 60 });
+  doc.fontSize(9).text(companyInfo, 30, 15, { align: 'right', width: doc.page.width - 60 });
 
   // ---------------- LETTER TITLE ----------------
   const titleY = headerHeight + 20;
@@ -52,7 +52,7 @@ doc.fontSize(9).text(companyInfo, 30, 15, { align: 'right', width: doc.page.widt
 
   // ---------------- BODY CONTENT ----------------
   const joiningDate = employee.joiningDate
-    ? new Date(employee.joiningDate).toLocaleDateString("en-IN", { day:"2-digit", month:"short", year:"numeric" })
+    ? new Date(employee.joiningDate).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })
     : "07/Jan/2026";
 
   doc.text(`We are delighted to welcome you to Infonic Solution as ${employee.designation || 'Frontend Developer'}. We feel confident in your skills and the experience you bring to the role. We are sure you will be a great addition to our team.`, { align: 'left', width: 500 });
@@ -97,23 +97,23 @@ doc.fontSize(9).text(companyInfo, 30, 15, { align: 'right', width: doc.page.widt
 
 
   // ---------------- FOOTER ----------------
-const footerY = 772;
-const footerHeight = 25;
-const fullWidth = doc.page.width; // poora page width
-const footerWidth = fullWidth / 3; // 3 equal parts
+  const footerY = 772;
+  const footerHeight = 25;
+  const fullWidth = doc.page.width; // poora page width
+  const footerWidth = fullWidth / 3; // 3 equal parts
 
-// Left red (Mobile)
-doc.rect(0, footerY, footerWidth, footerHeight).fill('#b91c1c');
-doc.fillColor('white').fontSize(10)
-   .text('Mob: 9782860519', 0, footerY + 7, { width: footerWidth, align: 'center' }); // center align
+  // Left red (Mobile)
+  doc.rect(0, footerY, footerWidth, footerHeight).fill('#b91c1c');
+  doc.fillColor('white').fontSize(10)
+    .text('Mob: 9782860519', 0, footerY + 7, { width: footerWidth, align: 'center' }); // center align
 
-// Center blue (Website)
-doc.rect(footerWidth, footerY, footerWidth, footerHeight).fill('#1d4ed8');
-doc.fillColor('white').text('www.infonicsolution.com', footerWidth, footerY + 7, { width: footerWidth, align: 'center' });
+  // Center blue (Website)
+  doc.rect(footerWidth, footerY, footerWidth, footerHeight).fill('#1d4ed8');
+  doc.fillColor('white').text('www.infonicsolution.com', footerWidth, footerY + 7, { width: footerWidth, align: 'center' });
 
-// Right red (Email)
-doc.rect(footerWidth*2, footerY, footerWidth, footerHeight).fill('#b91c1c');
-doc.fillColor('white').text('infonicsolutions@gmail.com', footerWidth*2, footerY + 7, { width: footerWidth, align: 'center' }); // center align
+  // Right red (Email)
+  doc.rect(footerWidth * 2, footerY, footerWidth, footerHeight).fill('#b91c1c');
+  doc.fillColor('white').text('infonicsolutions@gmail.com', footerWidth * 2, footerY + 7, { width: footerWidth, align: 'center' }); // center align
 
   doc.end();
 

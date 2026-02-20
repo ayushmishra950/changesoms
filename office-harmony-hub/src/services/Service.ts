@@ -731,3 +731,56 @@ export const handleAddPdfLetter = async (obj: any): Promise<{ success: boolean; 
     return { success: false, error: err };
   }
 };
+
+
+
+
+
+export const addRole = async (obj: any) => {
+  const res = await axios.post(
+    `${import.meta.env.VITE_API_URL}/api/role/add`,
+    obj
+  );
+
+  return res;
+}
+
+
+
+export const getAllRole = async () => {
+  const res = await axios.get(
+    `${import.meta.env.VITE_API_URL}/api/role/get`
+  );
+
+  return res;
+}
+
+
+export const getActiveRole = async (obj: any) => {
+  const res = await axios.get(
+    `${import.meta.env.VITE_API_URL}/api/role/get-active`,
+    obj
+  );
+
+  return res;
+}
+
+
+export const updateRole = async (id: string, obj: any) => {
+  const res = await axios.put(
+    `${import.meta.env.VITE_API_URL}/api/role/update/${id}`,
+    obj
+  );
+
+  return res;
+}
+
+
+export const roleStatusChange = async (obj: any) => {
+  const res = await axios.patch(
+    `${import.meta.env.VITE_API_URL}/api/role/toggle`,
+    obj
+  );
+
+  return res;
+}

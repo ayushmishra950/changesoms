@@ -1,5 +1,5 @@
 const express = require("express");
-const { createLeave, getAllLeaves, getLeaveById, updateLeave, deleteLeave} = require("../controllers/leaveController");
+const { createLeave, getAllLeaves, getLeaveById, updateLeave, deleteLeave } = require("../controllers/personalOffice/leaveController");
 
 const router = express.Router();
 

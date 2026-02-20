@@ -1,9 +1,9 @@
-const Letter = require("../models/Letter");
- const {generateOfferLetter} = require("../utils/generateOfferLetter");
-  const {getLettersByEmployee} = require("../utils/getLettersByEmployee");
+const Letter = require("../../models/personalOffice/Letter");
+const { generateOfferLetter } = require("../../utils/generateOfferLetter");
+const { getLettersByEmployee } = require("../../utils/getLettersByEmployee");
 
 const generateAndUploadLetter = async (req, res) => {
- try {
+  try {
     const { employeeId, letterType } = req.body;
 
     const pdfData = await generateOfferLetter(employeeId, letterType);
@@ -23,12 +23,12 @@ const generateAndUploadLetter = async (req, res) => {
 };
 
 
- const GetAllLetter = async(req, res) => {
-   try {
+const GetAllLetter = async (req, res) => {
+  try {
     const data = await getLettersByEmployee(req.params.employeeId);
     res.json(data);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
- }
+}
 module.exports = { generateAndUploadLetter, GetAllLetter };

@@ -9,7 +9,7 @@ const {
   updateEmployee,
   deleteEmployee,
   relieveEmployee
-} = require("../controllers/employeesController.js");
+} = require("../controllers/personalOffice/employeesController.js");
 
 const {
   generateEmployeeDocument,
@@ -17,7 +17,7 @@ const {
   getEmployeeDocuments,
   getEmployeeDocumentsByType,
   getSalarySummary
-} = require("../controllers/employDocumentController.js");
+} = require("../controllers/personalOffice/employDocumentController.js");
 
 /**
  * @swagger

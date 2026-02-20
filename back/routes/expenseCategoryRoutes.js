@@ -6,7 +6,7 @@ const {
   getExpenseCategoryById,
   updateExpenseCategory,
   deleteExpenseCategory
-} = require("../controllers/expenseCategoryController.js");
+} = require("../controllers/personalOffice/expenseCategoryController.js");
 
 /**
  * @swagger

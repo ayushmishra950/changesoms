@@ -1,10 +1,10 @@
-const Company = require("../models/companyModel");
-const { Admin } = require("../models/authModel");
-const Department = require("../models/departmentModel");
-const uploadToCloudinary = require("../cloudinary/uploadToCloudinary.js");
-const { Employee } = require("../models/employeeModel");
-const Project = require("../models/projectModel");
-const recentActivity = require("../models/recentActivityModel");
+const Company = require("../../models/personalOffice/companyModel.js");
+const { Admin } = require("../../models/personalOffice/authModel.js");
+const Department = require("../../models/personalOffice/departmentModel.js");
+const uploadToCloudinary = require("../../cloudinary/uploadToCloudinary.js");
+const { Employee } = require("../../models/personalOffice/employeeModel.js");
+const Project = require("../../models/personalOffice/projectModel.js");
+const recentActivity = require("../../models/personalOffice/recentActivityModel.js");
 /* -------------------------------------------------
    ADD COMPANY (Super Admin only) with Cloudinary Logo
 ------------------------------------------------- */
@@ -13,7 +13,7 @@ const addCompany = async (req, res) => {
     const { name, domain, address, contactNumber, email, website, isActive, id } = req.body;
     const superAdminId = id; // from auth middleware
 
-    if(!superAdminId){
+    if (!superAdminId) {
       return res.status(403).json({ message: "Not Permissions" });
     }
 
@@ -35,7 +35,7 @@ const addCompany = async (req, res) => {
     if (await Company.findOne({ email }))
       return res.status(400).json({ message: "Email already exists" });
 
-  
+
 
     const company = await Company.create({
       name,
@@ -65,17 +65,17 @@ const addCompany = async (req, res) => {
 ------------------------------------------------- */
 const getCompanies = async (req, res) => {
   try {
-    const {id} = req.params;
+    const { id } = req.params;
     const admin = await Admin.findById(id);
     if (!admin) return res.status(401).json({ message: "Unauthorized" });
 
-    if(admin?.role !== "super_admin") return res.status(403).json({message:"You do not have permission to perform this action."})
+    if (admin?.role !== "super_admin") return res.status(403).json({ message: "You do not have permission to perform this action." })
 
 
-    const companies = await Company.find({createdBy : admin?._id})
+    const companies = await Company.find({ createdBy: admin?._id })
       .populate("admins", "username email role")
       .sort({ createdAt: -1 });
-    
+
 
     res.status(200).json(companies);
   } catch (err) {
@@ -185,15 +185,15 @@ const updateCompany = async (req, res) => {
     const updates = req.body;
 
     // If a new logo file is uploaded
-   let logoUrl = updates.logo || ""; // default current logo
+    let logoUrl = updates.logo || ""; // default current logo
 
-if (req.files?.logo?.length > 0) {
-  const fileBuffer = req.files.logo[0].buffer;
-  if (fileBuffer) {
-    logoUrl = await uploadToCloudinary(fileBuffer);
-    updates.logo = logoUrl;
-  }
-}
+    if (req.files?.logo?.length > 0) {
+      const fileBuffer = req.files.logo[0].buffer;
+      if (fileBuffer) {
+        logoUrl = await uploadToCloudinary(fileBuffer);
+        updates.logo = logoUrl;
+      }
+    }
 
     // Convert isActive to boolean
     if (updates.isActive !== undefined) {

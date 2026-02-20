@@ -1,6 +1,6 @@
 // controllers/letterController.js
-const Letter = require('../models/Letter');
-const {Employee} = require('../models/employeeModel');
+const Letter = require('../models/personalOffice/Letter');
+const { Employee } = require('../models/personalOffice/employeeModel');
 
 /**
  * Fetch letter details by employeeId
@@ -10,7 +10,7 @@ const {Employee} = require('../models/employeeModel');
 async function getLettersByEmployee(employeeId) {
   try {
     // 1️⃣ Fetch letters for this employee
-    const letters = await Letter.find({employeeId: employeeId }).lean(); // lean() returns plain JS objects
+    const letters = await Letter.find({ employeeId: employeeId }).lean(); // lean() returns plain JS objects
 
     if (!letters || letters.length === 0) {
       return { message: 'No letters found for this employee' };

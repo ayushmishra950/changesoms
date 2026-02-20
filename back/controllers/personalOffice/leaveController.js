@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
-const { Leave } = require("../models/leaveModel");
-const Company = require("../models/companyModel");
+const { Leave } = require("../../models/personalOffice/leaveModel");
+const Company = require("../../models/personalOffice/companyModel");
 
 /**
  * CREATE LEAVE
@@ -76,7 +76,7 @@ const createLeave = async (req, res) => {
 const getAllLeaves = async (req, res) => {
   const { companyId } = req.params;
   try {
-    const leaves = await Leave.find({createdBy : companyId}).sort({ createdAt: -1 });
+    const leaves = await Leave.find({ createdBy: companyId }).sort({ createdAt: -1 });
 
     return res.status(200).json({
       success: true,

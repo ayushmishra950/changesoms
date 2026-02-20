@@ -9,7 +9,7 @@ const {
   updateLeaveStatus,
   deleteLeaveRequest,
   getMyLeaveRequestsByDate
-} = require("../controllers/leaveRequestController");
+} = require("../controllers/personalOffice/leaveRequestController");
 
 // const { auth, isAdmin } = require("../middlewares/authMiddleware");
 
@@ -71,7 +71,7 @@ router.post("/apply", applyLeave);
  *       200:
  *         description: List of leave requests
  */
-router.get("/my/:userId",  getMyLeaveRequests);
+router.get("/my/:userId", getMyLeaveRequests);
 
 /**
  * @swagger
@@ -85,7 +85,7 @@ router.get("/my/:userId",  getMyLeaveRequests);
  *       200:
  *         description: All leave requests fetched
  */
-router.get("/:companyId",  getAllLeaveRequests);
+router.get("/:companyId", getAllLeaveRequests);
 
 /**
  * @swagger
@@ -105,8 +105,8 @@ router.get("/:companyId",  getAllLeaveRequests);
  *       200:
  *         description: Leave request details
  */
-router.get("/:id",  getLeaveRequestById);
-router.get("/my/:userId/date",  getMyLeaveRequestsByDate);
+router.get("/:id", getLeaveRequestById);
+router.get("/my/:userId/date", getMyLeaveRequestsByDate);
 
 /**
  * @swagger

@@ -6,7 +6,7 @@ const {
   getExpenseById,
   updateExpense,
   deleteExpense
-} = require("../controllers/expenseController.js");
+} = require("../controllers/personalOffice/expenseController.js");
 
 /**
  * @swagger

@@ -1,11 +1,11 @@
-const { Employee } = require("../models/employeeModel.js"); // adjust path if needed
-const uploadToCloudinary = require("../cloudinary/uploadToCloudinary.js");
-const { EmployeeHistory } = require("../models/EmployeeHistoryModel.js");
-const { Admin } = require("../models/authModel.js");
+const { Employee } = require("../../models/personalOffice/employeeModel.js"); // adjust path if needed
+const uploadToCloudinary = require("../../cloudinary/uploadToCloudinary.js");
+const { EmployeeHistory } = require("../../models/personalOffice/EmployeeHistoryModel.js");
+const { Admin } = require("../../models/personalOffice/authModel.js");
 const bcrypt = require("bcryptjs");
-const recentActivity = require("../models/recentActivityModel.js");
-const Task = require("../models/taskModel");
-const SubTask = require("../models/SubtaskModel");
+const recentActivity = require("../../models/personalOffice/recentActivityModel.js");
+const Task = require("../../models/personalOffice/taskModel.js");
+const SubTask = require("../../models/personalOffice/SubtaskModel.js");
 
 // ---------------- Add Employee Controller ----------------
 
@@ -56,7 +56,7 @@ const addEmployee = async (req, res) => {
     // Upload helper
     const upload = async (file) =>
       file ? await uploadToCloudinary(file.buffer) : "";
-  
+
 
     // Create employee
     const employee = new Employee({
@@ -72,7 +72,7 @@ const addEmployee = async (req, res) => {
       monthSalary: Number(monthSalary || 0),
       lpa: Number(lpa || 0),
       remarks: remarks || "",
-             // 🔐 company isolation
+      // 🔐 company isolation
       createdBy: companyId,          // 🔐 admin who created
 
       profileImage: await upload(files?.profileImage?.[0]),
@@ -85,7 +85,7 @@ const addEmployee = async (req, res) => {
     });
 
     await employee.save();
-   await recentActivity.create({title:"New Employee Added.", createdBy:userId, createdByRole:"Admin", companyId:companyId})
+    await recentActivity.create({ title: "New Employee Added.", createdBy: userId, createdByRole: "Admin", companyId: companyId })
 
     return res.status(201).json({
       message: "Employee added successfully",
@@ -119,7 +119,7 @@ const addEmployee = async (req, res) => {
 // ---------------- Get All Employees ----------------
 const getEmployees = async (req, res) => {
   try {
-    const { companyId } = req.params; 
+    const { companyId } = req.params;
     if (!companyId) {
       return res.status(400).json({ message: "Company ID is required" });
     }
@@ -149,20 +149,20 @@ const getEmployeeById = async (req, res) => {
       return res.status(404).json({ message: "Employee not found or access denied" });
     }
 
-    if(employee?.taskRole === "manager"){
-     task = await Task.find({companyId, managerId: employee?._id})
+    if (employee?.taskRole === "manager") {
+      task = await Task.find({ companyId, managerId: employee?._id })
     }
-    else{
-      task = await SubTask.find({companyId, employeeId: employee?._id});
+    else {
+      task = await SubTask.find({ companyId, employeeId: employee?._id });
     }
 
     const history = await EmployeeHistory.find({ employeeId: id })
-    .populate({
-      path:"changedBy",populate : {
-          path : "admins", select : "username"
-      }
-    })
-    .sort({ effectiveDate: -1 });
+      .populate({
+        path: "changedBy", populate: {
+          path: "admins", select: "username"
+        }
+      })
+      .sort({ effectiveDate: -1 });
 
     return res.status(200).json({ employee, history, task });
   } catch (err) {
@@ -179,12 +179,12 @@ const updateEmployee = async (req, res) => {
     const files = req.files;
 
     if (!id) {
-  return res.status(400).json({ message: "Employee ID is required" });
-}
+      return res.status(400).json({ message: "Employee ID is required" });
+    }
 
-     if(!updates?.companyId){
-            return res.status(403).json({ message: "you did not have permission to changes." });
-     }
+    if (!updates?.companyId) {
+      return res.status(403).json({ message: "you did not have permission to changes." });
+    }
 
     const employee = await Employee.findById(id);
     if (!employee) {
@@ -217,7 +217,7 @@ const updateEmployee = async (req, res) => {
         oldData,
         newData,
         remarks,
-        changedBy:  null
+        changedBy: null
       });
     };
 
@@ -324,26 +324,26 @@ const updateEmployee = async (req, res) => {
       message: "Employee updated successfully",
       employee: updatedEmployee,
     });
- } catch (err) {
-  console.error("Update Employee Error:", err);
+  } catch (err) {
+    console.error("Update Employee Error:", err);
 
-  if (err.code === 11000) {
-    return res.status(409).json({
-      message: "Email already exists for another employee",
-      field: "email",
+    if (err.code === 11000) {
+      return res.status(409).json({
+        message: "Email already exists for another employee",
+        field: "email",
+      });
+    }
+
+    if (err.name === "CastError") {
+      return res.status(400).json({
+        message: "Invalid employee ID",
+      });
+    }
+
+    return res.status(500).json({
+      message: "Internal server error",
     });
   }
-
-  if (err.name === "CastError") {
-    return res.status(400).json({
-      message: "Invalid employee ID",
-    });
-  }
-
-  return res.status(500).json({
-    message: "Internal server error",
-  });
-}
 
 };
 
@@ -394,7 +394,7 @@ const relieveEmployee = async (req, res) => {
     if (!id) {
       return res.status(400).json({ message: "Employee ID is required" });
     }
-     if (!companyId) {
+    if (!companyId) {
       return res.status(400).json({ message: "companyId  is required" });
     }
     const employee = await Employee.findByIdAndUpdate({ _id: id, createdBy: companyId });
@@ -419,13 +419,13 @@ const relieveEmployee = async (req, res) => {
 
     await employee.save();
 
-     await EmployeeHistory.create({
+    await EmployeeHistory.create({
       employeeId: employee._id,
       eventType: "RELIEVED",
       oldData: { status: "ACTIVE" },
       newData: { status: "RELIEVED" },
       remarks: remarks || "Employee relieved",
-      changedBy:  companyId
+      changedBy: companyId
     });
 
     return res.status(200).json({

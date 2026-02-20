@@ -1,20 +1,20 @@
-const { Admin } = require("../models/authModel.js");
+const { Admin } = require("../../models/personalOffice/authModel.js");
 const bcrypt = require("bcrypt");
-const { Employee } = require("../models/employeeModel.js"); // adjust path if needed
-const Company = require("../models/companyModel");
-const { Expense } = require("../models/expenseModel.js");
-const { LeaveRequest } = require("../models/leaveRequestModel");
-const Attendance = require("../models/attendanceModel");
-const Task = require("../models/taskModel");
-const SubTask = require("../models/SubtaskModel");
-const RecentActivity = require("../models/recentActivityModel.js");
-const Project = require("../models/projectModel");
+const { Employee } = require("../../models/personalOffice/employeeModel.js"); // adjust path if needed
+const Company = require("../../models/personalOffice/companyModel.js");
+const { Expense } = require("../../models/personalOffice/expenseModel.js");
+const { LeaveRequest } = require("../../models/personalOffice/leaveRequestModel.js");
+const Attendance = require("../../models/personalOffice/attendanceModel.js");
+const Task = require("../../models/personalOffice/taskModel.js");
+const SubTask = require("../../models/personalOffice/SubtaskModel.js");
+const RecentActivity = require("../../models/personalOffice/recentActivityModel.js");
+const Project = require("../../models/personalOffice/projectModel.js");
 const mongoose = require("mongoose")
-const PayRoll = require("../models/payRollModel");
-const Department = require("../models/departmentModel.js");
-const Notification = require("../models/NotificationModel"); // Notification model
-const recentActivity = require("../models/recentActivityModel.js");
-const { generateAccessToken, generateRefreshToken } = require("../service/service.js")
+const PayRoll = require("../../models/personalOffice/payRollModel.js");
+const Department = require("../../models/personalOffice/departmentModel.js");
+const Notification = require("../../models/personalOffice/NotificationModel.js"); // Notification model
+const recentActivity = require("../../models/personalOffice/recentActivityModel.js");
+const { generateAccessToken, generateRefreshToken } = require("../../service/service.js")
 
 // ---------------- Register Admin ----------------
 
@@ -589,7 +589,7 @@ const updateUser = async (req, res) => {
 
         user = await adminUser.save();
         companyReference = null;
-      } 
+      }
       // 🔹 NORMAL ADMIN
       else {
         if (!companyId) {
@@ -623,7 +623,7 @@ const updateUser = async (req, res) => {
         user = await adminUser.save();
         companyReference = companyId;
       }
-    } 
+    }
     // 2️⃣ If not Admin → check Employee
     else {
       if (!companyId) {
@@ -1419,7 +1419,7 @@ const deleteAllNotifications = async (req, res) => {
     }
 
     const notification = await Notification.deleteMany(filter);
-    if(!notification) return res.status(404).json({ message: "Notification Messages Not Found." });
+    if (!notification) return res.status(404).json({ message: "Notification Messages Not Found." });
 
     res.status(200).json({ message: "All Notification Messages Deleted Successfully." });
   } catch (err) {

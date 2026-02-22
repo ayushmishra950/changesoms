@@ -3,10 +3,12 @@ import { Setting } from "@/types";
 
 export interface SettingState {
   setting: Setting | null;
+  companyDetail: string | any | null;
 }
 
 const initialState: SettingState = {
   setting: null,
+  companyDetail:null
 };
 
 const settingSlice = createSlice({
@@ -16,11 +18,14 @@ const settingSlice = createSlice({
     getSetting: (state, action: PayloadAction<Setting>) => {
       state.setting = action.payload;
     },
+    getCompanyDetail:(state,action:PayloadAction<any>) => {
+    state.companyDetail = action.payload
+    },
     clearSetting: (state) => {
       state.setting = null;
     }
   },
 });
 
-export const { getSetting, clearSetting } = settingSlice.actions;
+export const { getSetting, clearSetting, getCompanyDetail } = settingSlice.actions;
 export default settingSlice.reducer;

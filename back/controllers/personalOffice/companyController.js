@@ -176,6 +176,28 @@ const getCompanyById = async (req, res) => {
   }
 };
 
+
+
+/* -------------------------------------------------
+   GET COMPANY BY ID
+------------------------------------------------- */
+const getCompanyDetail = async (req, res) => {
+  const {companyId} = req.query;
+  try {
+    const company = await Company.findById(companyId).populate(
+      "admins",
+      "username email role mobile createdAt"
+    );
+
+    if (!company) return res.status(404).json({ message: "Company not found" });
+
+    res.status(200).json(company);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
 /* -------------------------------------------------
    UPDATE COMPANY
    (Supports logo file upload)
@@ -217,6 +239,37 @@ const updateCompany = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
+
+
+/* -------------------------------------------------
+   UPDATE COMPANY
+   (Supports logo file upload)
+------------------------------------------------- */
+const updateCompanyLeave = async (req, res) => {
+  try {
+    const {adminId, companyId, totalLeave, specialLeave} = req.body;
+
+    const company = await Company.findOne({_id:companyId});
+    if(!company) return res.status(404).json({message:"Company Not Found."});
+    const admin = await Admin.findOne({_id:adminId, companyId});
+    if(!admin) return res.status(404).json({message:"Admin Not Found."});
+
+    if(!totalLeave || !specialLeave) return res.status(404).json({messaeg:"total leave or special leave are required."})
+
+    company.totalLeave = totalLeave;
+    company.specialLeave = specialLeave;
+
+    await company.save();
+    res.status(200).json({
+      message: "Leave Count updated successfully",
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
 
 /* -------------------------------------------------
    SOFT DELETE COMPANY
@@ -286,5 +339,7 @@ module.exports = {
   deleteCompany,
   assignAdmin,
   getCompanyDepartments,
-  getCompaniesFromDashboard
+  getCompaniesFromDashboard,
+  getCompanyDetail,
+  updateCompanyLeave
 };

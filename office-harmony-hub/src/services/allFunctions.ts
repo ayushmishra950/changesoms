@@ -1,5 +1,5 @@
 
-import { LayoutDashboard, Users, Building2, FolderKanban, Clock, CalendarDays, Receipt, Wallet, Bell, BarChart3, Settings, LogOut, Briefcase } from 'lucide-react';
+import { LayoutDashboard, Users, Building2,IndianRupee, FolderKanban, Clock, CalendarDays, Receipt, Wallet, Bell, BarChart3, Settings, LogOut, Briefcase } from 'lucide-react';
 
 //   date ko frontend m normal show karne k liye
 export function formatDate(isoDate, format = 'short', locale = 'en-US') {
@@ -210,7 +210,7 @@ export const navItems: NavItem[] = [
   { icon: CalendarDays, label: 'Leave', path: '/leaves', roles: ['admin', 'employee'] },
   { icon: Briefcase, label: 'Departments', path: '/departments', roles: ['admin'] },
   { icon: Users, label: 'Employees', path: '/users', roles: ['super_admin', 'admin'] },
-  { icon: Receipt, label: 'Expenses', path: '/expenses', roles: ['admin'] },
+  { icon: IndianRupee, label: 'Expenses', path: '/expenses', roles: ['admin'] },
   { icon: Wallet, label: 'Payroll', path: '/payrolls', roles: ['admin', 'employee'] },
   { icon: Bell, label: 'Job-Portal', path: '/jobs', roles: ['super_admin', 'admin'] },
   { icon: BarChart3, label: 'Reports', path: '/reports', roles: ['admin'] },

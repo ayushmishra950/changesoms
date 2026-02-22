@@ -117,11 +117,11 @@ export default function GeneratePayslipDialog({
       }
     } catch (err) {
       console.log(err);
-      toast({
-        title: "Error",
-        description: err?.response?.data?.message || "Something went wrong",
-        variant:"destructive"
-      });
+      // toast({
+      //   title: "Error",
+      //   description: err?.response?.data?.message || "Something went wrong",
+      //   variant:"destructive"
+      // });
     }
   };
 

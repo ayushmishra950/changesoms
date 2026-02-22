@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { Users as UsersIcon, Plus, Search, MoreHorizontal, ArrowLeft, FileMinus, Award, Mail, FileCheck, Phone, UserPlus, Building2, FileText, Calendar, Edit, LogOut } from 'lucide-react';
+import { Users as UsersIcon, Plus, Search, MoreHorizontal, ArrowLeft, FileMinus, Award, Mail, FileCheck, Phone, UserPlus, Building2, FileText, Calendar, Edit, LogOut, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,7 +8,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { useNavigate } from 'react-router-dom';
 import { EmployeeFormDialog } from "@/Forms/EmployeeFormDialog"
 import DeleteCard from "@/components/cards/DeleteCard"
-import { getEmployees, getAdmins, handleGetPdfLetter, deleteAdmin, updateAdminStatus } from "@/services/Service";
+import { getEmployees, getAdmins, handleGetPdfLetter, deleteAdmin, updateAdminStatus, updateEmployeeStatus } from "@/services/Service";
 import { useToast } from '@/hooks/use-toast';
 import RelieveEmployeeCard from "@/components/cards/RelieveEmployeeCard"
 import AdminFormDialog from "@/Forms/AdminFormDialog";
@@ -16,7 +16,7 @@ import AdminListCard from "@/components/cards/AdminListCard";
 import { Helmet } from "react-helmet-async";
 import { formatDate } from "@/services/allFunctions"
 import AddManagerForm from "@/task/forms/AddManagerForm";
-import {getAdminList, getEmployeeList} from "@/redux-toolkit/slice/allPage/userSlice";
+import { getAdminList, getEmployeeList } from "@/redux-toolkit/slice/allPage/userSlice";
 import { useAppDispatch, useAppSelector } from '@/redux-toolkit/hooks/hook';
 
 const Users: React.FC = () => {
@@ -45,18 +45,41 @@ const Users: React.FC = () => {
   // const [adminList, setAdminList] = useState([]);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [managerRefresh, setManagerRefresh] = useState(false);
-    const [pageLoading, setPageLoading] = useState(false);
+  const [pageLoading, setPageLoading] = useState(false);
+  const [statusFilter, setStatusFilter] = useState("ACTIVE");
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const adminList = useAppSelector((state) => state.user.admins);
   const userList = useAppSelector((state) => state.user.employees);
 
-  const filteredUsers = userList.filter(
-    (u) =>
+  const filteredUsers = userList.filter((u) => {
+    const matchesSearch =
+      !searchQuery ||
       u.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       u.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      u.department.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+      u.department.toLowerCase().includes(searchQuery.toLowerCase());
+
+    const matchesStatus =
+      !statusFilter || // optional, agar toggle disable ho
+      u.status.toLowerCase() === statusFilter.toLowerCase();
+
+    return matchesSearch && matchesStatus;
+  });
+
+  const handleUpdateEmployeeStatus = async (id) => {
+    let obj = { adminId: user?._id, companyId: user?.companyId?._id, employeeId: id, status: "ACTIVE" }
+    try {
+      const res = await updateEmployeeStatus(obj);
+      if(res.status===200){
+                setEmployeeListRefresh(true);
+        toast({title:"Employee Status Active Successfully.", description:res.data.message});
+      }
+    }
+    catch (err) {
+      console.log(err);
+      toast({ title: "Error Employee Status.", description: err?.response?.data?.message || err?.message, variant: "destructive" })
+    }
+  }
   const handleGetEmployee = async () => {
     if (!user?.companyId?._id) {
       toast({ title: "Error", description: "Company Id Not Found." })
@@ -71,10 +94,10 @@ const Users: React.FC = () => {
       }
     } catch (err) {
       console.log(err);
-      toast({
-        title: "Error",
-        description: err?.response?.data?.message || "Something went wrong",
-      });
+      // toast({
+      //   title: "Error",
+      //   description: err?.response?.data?.message || "Something went wrong",
+      // });
     }
   };
 
@@ -220,13 +243,13 @@ const Users: React.FC = () => {
 
 
 
-   if (pageLoading && (userList.length === 0 || (user?.role === "super_admin" && adminList.length === 0))) {
-  return (
-    <div className="flex items-center justify-center h-screen">
-      <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-primary"></div>
-    </div>
-  );
-}
+  if (pageLoading && (userList.length === 0 || (user?.role === "super_admin" && adminList.length === 0))) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-primary"></div>
+      </div>
+    );
+  }
 
 
   return (
@@ -355,7 +378,7 @@ const Users: React.FC = () => {
         <div className="flex items-center justify-between w-full gap-4">
 
           {/* Left Side - Search */}
-          <div className="relative w-full max-w-sm">
+          {/* <div className="relative w-full max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
               placeholder={`Search ${user?.role==="super_admin" ? "admins" : "employees"}...`}
@@ -363,6 +386,49 @@ const Users: React.FC = () => {
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10 w-full"
             />
+          </div> */}
+
+
+          <div className="relative flex items-center gap-4">
+
+            {/* Search Box */}
+            <div className="relative w-full max-w-sm">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder={`Search ${user?.role === "super_admin" ? "admins" : "employees"}...`}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 w-full"
+              />
+            </div>
+
+            {/* Toggle Buttons (Absolutely Positioned) */}
+            {user?.role === "admin" && (
+              <div className="absolute right-[-200px] flex bg-muted rounded-lg p-1">
+                <button
+                  onClick={() => setStatusFilter("ACTIVE")}
+                  className={`px-4 py-1 text-sm rounded-md transition
+          ${statusFilter === "ACTIVE"
+                      ? "bg-white shadow text-primary"
+                      : "text-muted-foreground"}
+        `}
+                >
+                  Active
+                </button>
+
+                <button
+                  onClick={() => setStatusFilter("RELIEVED")}
+                  className={`px-4 py-1 text-sm rounded-md transition
+          ${statusFilter === "RELIEVED"
+                      ? "bg-white shadow text-primary"
+                      : "text-muted-foreground"}
+        `}
+                >
+                  Relieve
+                </button>
+              </div>
+            )}
+
           </div>
 
           {/* Right Side - Button */}
@@ -448,14 +514,28 @@ const Users: React.FC = () => {
                         Edit
                       </DropdownMenuItem>
 
-                      <DropdownMenuItem
+                      {/* Relieve Button */}
+                      {userData?.status === "ACTIVE" && (<DropdownMenuItem
                         className="cursor-pointer"
-                        disabled={userData?.status === "RELIEVED"}
-                        onClick={() => { setShowRelieve(true); setSelectedEmployeeId(userData?._id) }}
+                        onClick={() => {
+                          setShowRelieve(true);
+                          setSelectedEmployeeId(userData?._id);
+                        }}
                       >
                         <LogOut className="w-4 h-4 mr-2" />
                         Relieve
-                      </DropdownMenuItem>
+                      </DropdownMenuItem>)}
+
+                      {/* Make Active Button (only for RELIEVED users) */}
+                      {userData?.status === "RELIEVED" && (
+                        <DropdownMenuItem
+                          className="cursor-pointer text-green-600"
+                        onClick={() => handleUpdateEmployeeStatus(userData?._id)}
+                        >
+                          <Check className="w-4 h-4 mr-2" />
+                          Make Active
+                        </DropdownMenuItem>
+                      )}
 
                       <DropdownMenuItem
                         className="cursor-pointer"

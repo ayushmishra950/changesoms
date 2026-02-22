@@ -54,7 +54,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       console.log(error);
       toast({
         title: "Error",
-        description: error?.message || String(error) || "Something went wrong",
+        description: error?.response?.data?.message || error?.message ||  String(error) || "Something went wrong",
         variant: "destructive",
       });
     }

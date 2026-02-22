@@ -250,17 +250,24 @@ export const EmployeeFormDialog: React.FC<EmployeeFormDialogProps> = ({
         formData.append("profileImage", currentEmployee.profileImage);
       }
 
-      if (currentEmployee?.documents?.SalarySlip?.url instanceof File) {
-        formData.append("salarySlip", currentEmployee.documents.SalarySlip.url);
-      }
       if (currentEmployee?.documents?.Aadhaar?.url instanceof File) {
         formData.append("aadhaar", currentEmployee.documents.Aadhaar.url);
+      } else if (typeof currentEmployee?.documents?.Aadhaar?.url === "string" && currentEmployee?.documents?.Aadhaar?.url !== "") {
+        formData.append("aadhaar", currentEmployee.documents.Aadhaar.url);
       }
+
       if (currentEmployee?.documents?.PAN?.url instanceof File) {
         formData.append("panCard", currentEmployee.documents.PAN.url);
+      } else if (typeof currentEmployee?.documents?.PAN?.url === "string" && currentEmployee?.documents?.PAN?.url !== "") {
+        formData.append("panCard", currentEmployee.documents.PAN.url);
       }
+
       if (currentEmployee?.documents?.BankPassbook?.url instanceof File) {
         formData.append("bankPassbook", currentEmployee.documents.BankPassbook.url);
+      }
+
+      if (currentEmployee?.documents?.SalarySlip?.url instanceof File) {
+        formData.append("salarySlip", currentEmployee.documents.SalarySlip.url);
       }
 
       let response;
@@ -639,6 +646,17 @@ export const EmployeeFormDialog: React.FC<EmployeeFormDialogProps> = ({
                         preview={aadhaarPreview}
                         setPreview={setAadhaarPreview}
                         onChange={(e) => handleFileChange(e, "Aadhaar", setAadhaarPreview)}
+                        allowText={true}
+                        textValue={typeof currentEmployee?.documents?.Aadhaar?.url === "string" ? currentEmployee?.documents?.Aadhaar?.url : ""}
+                        onTextChange={(val) => {
+                          setCurrentEmployee((prev: any) => ({
+                            ...prev,
+                            documents: {
+                              ...prev?.documents,
+                              Aadhaar: { ...prev?.documents?.Aadhaar, url: val }
+                            }
+                          }));
+                        }}
                       />
                       <FileInput
                         label="PAN Card"
@@ -647,6 +665,17 @@ export const EmployeeFormDialog: React.FC<EmployeeFormDialogProps> = ({
                         preview={panPreview}
                         setPreview={setPanPreview}
                         onChange={(e) => handleFileChange(e, "PAN", setPanPreview)}
+                        allowText={true}
+                        textValue={typeof currentEmployee?.documents?.PAN?.url === "string" ? currentEmployee?.documents?.PAN?.url : ""}
+                        onTextChange={(val) => {
+                          setCurrentEmployee((prev: any) => ({
+                            ...prev,
+                            documents: {
+                              ...prev?.documents,
+                              PAN: { ...prev?.documents?.PAN, url: val }
+                            }
+                          }));
+                        }}
                       />
                       <FileInput
                         label="Bank Passbook"
@@ -714,32 +743,69 @@ interface FileInputProps {
   preview: string;
   setPreview: React.Dispatch<React.SetStateAction<string>>;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  allowText?: boolean;
+  textValue?: string;
+  onTextChange?: (value: string) => void;
 }
 
-const FileInput: React.FC<FileInputProps> = ({ label, ref, file, preview, setPreview, onChange }) => (
-  <div className="space-y-1 relative">
-    <Label className="text-xs sm:text-sm text-muted-foreground">{label}</Label>
-    <Input type="file" accept=".pdf,image/*" ref={ref} onChange={onChange} />
-    {preview && (
-      <div className="relative w-24 h-24 mt-1 border rounded overflow-hidden">
-        {preview === "PDF_SELECTED" || file?.type === "application/pdf" ? (
-          <div className="flex items-center justify-center w-full h-full bg-gray-100 text-sm text-gray-600 font-medium">
-            PDF
-          </div>
-        ) : (
-          <img src={preview} alt={`${label} Preview`} className="w-full h-full object-cover" />
+const FileInput: React.FC<FileInputProps> = ({ label, ref, file, preview, setPreview, onChange, allowText, textValue, onTextChange }) => {
+  const [useText, setUseText] = useState(false);
+
+  useEffect(() => {
+    if (textValue && !file && allowText) {
+      setUseText(true);
+    }
+  }, [textValue, file, allowText]);
+
+  return (
+    <div className="space-y-1 relative">
+      <div className="flex items-center justify-between">
+        <Label className="text-xs sm:text-sm text-muted-foreground">{label}</Label>
+        {allowText && (
+          <button
+            type="button"
+            onClick={() => setUseText(!useText)}
+            className="text-[10px] text-primary hover:underline"
+          >
+            {useText ? "Upload File" : "Enter Number"}
+          </button>
         )}
-        <button
-          type="button"
-          className="absolute top-1 right-1 w-5 h-5 bg-white rounded-full flex items-center justify-center text-red-600 hover:bg-red-50 shadow-sm"
-          onClick={() => {
-            setPreview("");
-            if (ref && "current" in ref && ref.current) ref.current.value = "";
-          }}
-        >
-          ×
-        </button>
       </div>
-    )}
-  </div>
-);
+
+      {useText ? (
+        <Input
+          type="text"
+          className="h-9 sm:h-10 text-sm"
+          placeholder={`Enter ${label} number`}
+          value={textValue || ""}
+          onChange={(e) => onTextChange?.(e.target.value)}
+        />
+      ) : (
+        <Input type="file" accept=".pdf,image/*" ref={ref} onChange={onChange} />
+      )}
+
+      {!useText && preview && (
+        <div className="relative w-24 h-24 mt-1 border rounded overflow-hidden">
+          {preview === "PDF_SELECTED" || file?.type === "application/pdf" ? (
+            <div className="flex items-center justify-center w-full h-full bg-gray-100 text-sm text-gray-600 font-medium">
+              PDF
+            </div>
+          ) : (
+            <img src={preview} alt={`${label} Preview`} className="w-full h-full object-cover" />
+          )}
+          <button
+            type="button"
+            className="absolute top-1 right-1 w-5 h-5 bg-white rounded-full flex items-center justify-center text-red-600 hover:bg-red-50 shadow-sm"
+            onClick={() => {
+              setPreview("");
+              if (ref && "current" in ref && ref.current) ref.current.value = "";
+            }}
+          >
+            ×
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
+

@@ -123,7 +123,7 @@ const SalarySlipCard = ({ data, onClose }) => {
                   <strong>Name:</strong> {item.employeeId?.fullName || 'N/A'}
                 </p>
                 <p>
-                  <strong>Employee ID:</strong> {item.employeeId?._id || 'N/A'}
+                  <strong>Employee ID:</strong> EMP{item.employeeId?._id?.slice(-6).toUpperCase() || 'N/A'}
                 </p>
                 <p>
                   <strong>Department:</strong> {item.departmentId?.name || 'N/A'}

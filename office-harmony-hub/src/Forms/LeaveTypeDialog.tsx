@@ -20,7 +20,6 @@ export interface LeaveTypeFormData {
   _id?: string; // optional, used for edit mode
   name: string;
   description: string;
-  maxDays: number;
   paid: boolean;
   color?: string;
 }
@@ -41,7 +40,6 @@ setLeaveTypeRefresh
   const [form, setForm] = useState<LeaveTypeFormData>({
     name: '',
     description: '',
-    maxDays: 1,
     paid: true,
     color: '#0d6efd',
   });
@@ -54,7 +52,7 @@ setLeaveTypeRefresh
     if (initialData) {
       setForm(initialData);
     } else {
-      setForm({ name: '', description: '', maxDays: 1, paid: true, color: '#0d6efd' });
+      setForm({ name: '', description: '', paid: true, color: '#0d6efd' });
     }
   }, [initialData, isOpen]);
 
@@ -79,7 +77,6 @@ setLeaveTypeRefresh
         {
           name: form.name,
           description: form.description,
-          maxDaysAllowed: form.maxDays,
           paid: form.paid,
           color: form.color,
           companyId : user?.companyId?._id,
@@ -92,7 +89,6 @@ setLeaveTypeRefresh
         {
           name: form.name,
           description: form.description,
-          maxDaysAllowed: form.maxDays,
           paid: form.paid,
           color: form.color,
           companyId : user?.companyId?._id,
@@ -116,7 +112,6 @@ setLeaveTypeRefresh
         setForm({
           name: "",
           description: "",
-          maxDays: 1,
           paid: true,
           color: "#0d6efd",
         });
@@ -172,21 +167,6 @@ setLeaveTypeRefresh
               onChange={(e) => setForm({ ...form, description: e.target.value })}
             />
           </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="leave-maxDays">Maximum Days Allowed *</Label>
-            <Input
-              id="leave-maxDays"
-              type="number"
-              min={1}
-              value={form.maxDays}
-              onChange={(e) =>
-                setForm({ ...form, maxDays: Number(e.target.value) || 1 })
-              }
-              required
-            />
-          </div>
-
           <div className="flex items-center gap-2">
             <Checkbox
               id="leave-paid"

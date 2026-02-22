@@ -16,7 +16,7 @@ function initSocket(server) {
     console.log("Client connected:", socket.id);
 
     socket.on("joinRoom", (roomId) => {
-      socket.join(roomId.toString());
+      socket.join(roomId?.toString());
       console.log(`${socket.id} joined room: ${roomId}`);
     });
 

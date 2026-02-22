@@ -8,7 +8,8 @@ const {
   getLeaveRequestById,
   updateLeaveStatus,
   deleteLeaveRequest,
-  getMyLeaveRequestsByDate
+  getMyLeaveRequestsByDate,
+  getEmployeeLeaveSummary
 } = require("../controllers/personalOffice/leaveRequestController");
 
 // const { auth, isAdmin } = require("../middlewares/authMiddleware");
@@ -107,6 +108,7 @@ router.get("/:companyId", getAllLeaveRequests);
  */
 router.get("/:id", getLeaveRequestById);
 router.get("/my/:userId/date", getMyLeaveRequestsByDate);
+router.get("/leave/dashboard", getEmployeeLeaveSummary);
 
 /**
  * @swagger

@@ -172,7 +172,7 @@ const CompanyCard: React.FC<{ company: Company }> = ({ company }) => {
         <div className="ml-4">
           <h2 className="text-xl font-bold">{name}</h2>
           <p className="text-sm text-muted-foreground">
-            Admin: {adminNames?.[0] || "Admin"}
+            Admin: {adminNames?.[0] || "No Admin"}
           </p>
         </div>
       </div>
@@ -255,30 +255,41 @@ const CompanyList: React.FC = () => {
   }, [companyList.length, recentActivities.length, user]);
 
   return (
-    <div className="space-y-8">
-      {/* Company Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-h-[800px] overflow-y-auto">
-        {companyList.map((company) => (
+  <div className="space-y-8">
+    {/* Company Cards */}
+    <div className="grid w-full grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-h-[800px] overflow-y-auto">
+      {companyList && companyList.length > 0 ? (
+        companyList.map((company) => (
           <CompanyCard key={company._id} company={company} />
-        ))}
-      </div>
+        ))
+      ) : (
+        <div className="col-span-full text-center text-muted-foreground py-6">
+          No Companies Found.
+        </div>
+      )}
+    </div>
 
-      {/* Full Width Recent History */}
-      <div className="w-full bg-white dark:bg-gray-800 shadow-md rounded-xl p-6">
-        <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-          <History className="w-5 h-5" />
-          Recent History
-        </h2>
+    {/* Full Width Recent History */}
+    <div className="w-full bg-white dark:bg-gray-800 shadow-md rounded-xl p-6">
+      <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+        <History className="w-5 h-5" />
+        Recent History
+      </h2>
 
-        <div className="space-y-3  max-h-[400px] overflow-y-auto">
-          {recentActivities?.map((item) => (
+      <div className="space-y-3 max-h-[400px] overflow-y-auto">
+        {recentActivities && recentActivities.length > 0 ? (
+          recentActivities.map((item) => (
             <div
               key={item._id}
               className="w-full bg-muted/40 rounded-lg p-4 text-sm flex items-start justify-between"
             >
               <div>
-                <div className="font-medium">Company :- {item?.companyId?.name}</div>
-                <div className="text-muted-foreground">Admin:- {item?.createdBy?.username}</div>
+                <div className="font-medium">
+                  Company :- {item?.companyId?.name}
+                </div>
+                <div className="text-muted-foreground">
+                  Admin:- {item?.createdBy?.username}
+                </div>
                 <div className="mt-1">Title :- {item.title}</div>
               </div>
 
@@ -286,11 +297,16 @@ const CompanyList: React.FC = () => {
                 {formatDate(item.date)}
               </div>
             </div>
-          ))}
-        </div>
+          ))
+        ) : (
+          <div className="text-center text-muted-foreground py-6">
+            No Recent History Found.
+          </div>
+        )}
       </div>
     </div>
-  );
+  </div>
+);
 };
 
 export default CompanyList;

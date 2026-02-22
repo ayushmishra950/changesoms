@@ -7,81 +7,69 @@ import { useToast } from "@/hooks/use-toast";
 import { Calendar } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNotifications } from "@/contexts/NotificationContext";
-import {getAttendanceData, getEmployees} from "@/services/Service";
-import {AttendanceItem,Props, months } from "@/types/index";
-import {getStatusStyle, getMonthlySummary}  from "@/services/allFunctions";
+import { getAttendanceData, getEmployees } from "@/services/Service";
+import { AttendanceItem, Props, months } from "@/types/index";
+import { getStatusStyle, getMonthlySummary } from "@/services/allFunctions";
 import { useAppDispatch, useAppSelector } from "@/redux-toolkit/hooks/hook";
 import { getAttendance } from "@/redux-toolkit/slice/allPage/attendanceSlice";
-import {getEmployeeList} from "@/redux-toolkit/slice/allPage/userSlice";
+import { getEmployeeList } from "@/redux-toolkit/slice/allPage/userSlice";
 import { getAttendancePayroll } from "@/redux-toolkit/slice/allPage/payrollSlice";
- 
-const AttendanceTable: React.FC<Props> = ({ attendanceRefresh, setAttendanceRefresh }) => {
-  // const [attendanceList, setAttendanceList] = useState<AttendanceItem[]>([]);
-  // const [payrollList, setPayrollList] = useState<any[]>([]);
 
+const AttendanceTable: React.FC<Props> = ({ attendanceRefresh, setAttendanceRefresh }) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const daysInMonth = 31;
-  
 
   const today = new Date();
   const todayDate = today.getDate();
   const todayMonth = today.getMonth();
   const todayYear = today.getFullYear();
   const isCurrentMonth = todayMonth === new Date().getMonth() && todayYear === new Date().getFullYear();
-
   const getTodayDate = () => today.toISOString().split("T")[0];
-
   const [selectedDate, setSelectedDate] = useState(getTodayDate());
   const { notifications } = useNotifications();
-  // const [employeeList, setEmployeeList] = useState([]);
-     const [pageLoading, setPageLoading] = useState(false);
-   
+  const [pageLoading, setPageLoading] = useState(false);
+
   const dispatch = useAppDispatch();
   const attendanceList = useAppSelector((state) => state.attendance.attendance);
   const employeeList = useAppSelector((state) => state.user.employees);
   const payrollList = useAppSelector((state) => state.payroll.attendancePayRoll);
 
-  
-    // =================== Fetch Employees ===================
-    const handleGetEmployees = async () => {
-      try { 
-        setPageLoading(true);
-        const data = await getEmployees(user?.companyId?._id);
-        if (Array.isArray(data)) dispatch(getEmployeeList(data));
-      } catch (err: any) {
-        toast({
-          title: "Error",
-          description: err?.response?.data?.message || "Something went wrong",
-          variant: "destructive",
-        });
-      } 
-      finally{
-        setPageLoading(false);
-      }
-    };
-   useEffect(() => {
-  if (
-    (user?.role === "admin" || user?.taskRole === "manager") && employeeList.length === 0) {
-    handleGetEmployees();
-  }
-}, [user?.role, user?.taskRole, employeeList.length]);
+
+  // =================== Fetch Employees ===================
+  const handleGetEmployees = async () => {
+    try {
+      setPageLoading(true);
+      const data = await getEmployees(user?.companyId?._id);
+      if (Array.isArray(data)) dispatch(getEmployeeList(data));
+    } catch (err: any) {
+      console.log(err);
+    }
+    finally {
+      setPageLoading(false);
+    }
+  };
+  useEffect(() => {
+    if (
+      (user?.role === "admin" || user?.taskRole === "manager") && employeeList.length === 0) {
+      handleGetEmployees();
+    }
+  }, [user?.role, user?.taskRole, employeeList.length]);
 
 
   // ================= Fetch Attendance =================
   const fetchAttendances = async (date: string) => {
     try {
-      console.log("Fetching attendance for date:", date);
       const selected = new Date(date);
 
       const month = selected.getMonth() + 1; // JS months = 0–11
       const year = selected.getFullYear();
-       const companyId = user?.role === "employee"? user?.createdBy?._id : user?.companyId?._id;
-      if(!month || !year || !companyId) return;
-    setPageLoading(true);
-       const res = await getAttendanceData(month, year, companyId);
+      const companyId = user?.role === "employee" ? user?.createdBy?._id : user?.companyId?._id;
+      if (!month || !year || !companyId) return;
+      setPageLoading(true);
+      const res = await getAttendanceData(month, year, companyId);
 
-      if (Array.isArray(res?.data?.records)) {      
+      if (Array.isArray(res?.data?.records)) {
         dispatch(getAttendance(res.data?.records || []));
         setAttendanceRefresh(false)
       }
@@ -98,23 +86,23 @@ const AttendanceTable: React.FC<Props> = ({ attendanceRefresh, setAttendanceRefr
           err?.response?.data?.error || "Something went wrong",
       });
     }
-    finally{
+    finally {
       setPageLoading(false);
     }
-    
-  };
-const lastNotificationCount = useRef(notifications?.length || 0);
 
-useEffect(() => {
-  if (!user?._id) return;
+  };
+  const lastNotificationCount = useRef(notifications?.length || 0);
+
+  useEffect(() => {
+    if (!user?._id) return;
     console.log(attendanceRefresh)
-  let shouldFetch = attendanceList.length === 0 || payrollList.length === 0 || attendanceRefresh || (notifications?.length > lastNotificationCount.current);
-  if (shouldFetch) {
-    fetchAttendances(selectedDate);
-    // update last seen notifications count
-    lastNotificationCount.current = notifications?.length || 0;
-  }
-}, [user?._id, selectedDate, attendanceRefresh, attendanceList.length, payrollList.length, notifications?.length]);
+    let shouldFetch = attendanceList.length === 0 || payrollList.length === 0 || attendanceRefresh || (notifications?.length > lastNotificationCount.current);
+    if (shouldFetch) {
+      fetchAttendances(selectedDate);
+      // update last seen notifications count
+      lastNotificationCount.current = notifications?.length || 0;
+    }
+  }, [user?._id, selectedDate, attendanceRefresh, attendanceList.length, payrollList.length, notifications?.length]);
 
   // ================= Process Attendance =================
   const attendanceMap = useMemo(() => {
@@ -123,17 +111,17 @@ useEffect(() => {
     // Filter: employee sees only own data
     const filteredList =
       user?.role === "employee"
-        ? attendanceList?.filter(att => att.userId._id === user?._id)
+        ? attendanceList?.filter(att => att?.userId?._id === user?._id)
         : attendanceList;
 
     filteredList.forEach((item) => {
-      const userId = item.userId._id;
+      const userId = item?.userId?._id;
       const day = new Date(item.date).getDate();
 
       if (!map[userId]) {
         map[userId] = {
-          name: item.userId.fullName,
-          profilePic: item.userId.profileImage,
+          name: item?.userId?.fullName,
+          profilePic: item?.userId?.profileImage,
           attendanceByDate: {},
         };
       }
@@ -149,10 +137,38 @@ useEffect(() => {
     return map;
   }, [attendanceList, user]);
 
-  const users = useMemo(
-    () => Object.keys(attendanceMap).map(id => ({ _id: id, ...attendanceMap[id] })),
-    [attendanceMap]
-  );
+  // const users = useMemo(
+  //   () => Object.keys(attendanceMap).map(id => ({ _id: id, ...attendanceMap[id] })),
+  //   [attendanceMap]
+  // );
+
+
+  const users = useMemo(() => {
+    if (user?.role === "employee") {
+      return [{
+        _id: user._id,
+        name: user.fullName,
+        profilePic: user.profileImage,
+        attendanceByDate: attendanceMap[user._id]?.attendanceByDate || {},
+      }];
+    }
+
+    if (!employeeList?.length) return [];
+
+    return employeeList.map((emp) => {
+      const attendanceData = attendanceMap[emp._id];
+
+      return {
+        _id: emp._id,
+        name: emp.fullName,
+        profilePic: emp.profileImage,
+        attendanceByDate: attendanceData?.attendanceByDate || {},
+      };
+    });
+  }, [employeeList, attendanceMap, user]);
+
+
+
 
   const payrollMap = useMemo(() => {
     const map: Record<string, any> = {};
@@ -168,48 +184,48 @@ useEffect(() => {
     let totalSalary = 0;
     let cutAmount = 0;
     let finalSalary = 0;
-    if (!payroll){
-       totalSalary = Number(employeeList.find((e)=> e?._id === userId)?.monthSalary || 0);
-        return {
-      totalSalary,
-      cutAmount,
-      finalSalary,
-    };
+    if (!payroll) {
+      totalSalary = Number(employeeList.find((e) => e?._id === userId)?.monthSalary || 0);
+      return {
+        totalSalary,
+        cutAmount,
+        finalSalary,
+      };
     }
-    else{
-    const summary = getMonthlySummary(userId, attendanceMap);
+    else {
+      const summary = getMonthlySummary(userId, attendanceMap);
 
-     totalSalary =
-      Number(payroll.basic || 0) +
-      Number(payroll.allowance || 0) -
-      Number(payroll.deductions || 0);
+      totalSalary =
+        Number(payroll.basic || 0) +
+        Number(payroll.allowance || 0) -
+        Number(payroll.deductions || 0);
 
-    const totalWorkingDays = 30; // fixed (ya dynamic kar sakte ho)
-    const perDaySalary = totalSalary / totalWorkingDays;
+      const totalWorkingDays = 30; // fixed (ya dynamic kar sakte ho)
+      const perDaySalary = totalSalary / totalWorkingDays;
 
-    const absentDays =
-      summary.absent +
-      summary.halfDay * 0.5;
+      const absentDays =
+        summary.absent +
+        summary.halfDay * 0.5;
 
-    const cutAmount = perDaySalary * absentDays;
-    const finalSalary = Math.max(totalSalary - cutAmount, 0);
+      const cutAmount = perDaySalary * absentDays;
+      const finalSalary = Math.max(totalSalary - cutAmount, 0);
 
-    return {
-      totalSalary,
-      cutAmount,
-      finalSalary,
-    };
-  }
+      return {
+        totalSalary,
+        cutAmount,
+        finalSalary,
+      };
+    }
   };
 
-  
+
   if (pageLoading && (!employeeList?.length || !attendanceList.length || !payrollList.length)) {
-  return (
-    <div className="flex items-center justify-center h-screen">
-      <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-primary"></div>
-    </div>
-  );
-}
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-primary"></div>
+      </div>
+    );
+  }
 
   // ================= Render =================
   return (
@@ -284,7 +300,7 @@ useEffect(() => {
                       <div className="font-semibold text-red-700">A: {summary.absent}</div>
                       {summary.halfDay > 0 && <div className="font-semibold text-yellow-700">H: {summary.halfDay}</div>}
                       {summary.late > 0 && <div className="font-semibold text-orange-700">L: {summary.late}</div>}
-                      {user?.role==="admin"? (() => {
+                      {user?.role === "admin" ? (() => {
                         const salary = calculateSalaryAfterCut(emp._id);
                         if (!salary) return null;
 

@@ -96,7 +96,7 @@ const applyLeave = async (req, res) => {
     await sendNotification({
       createdBy: userId,
 
-      userId: companyExists?.admins[0] || "69735b496f1896b3b1ceff46",
+      userId: companyExists?.admins[0],
 
       userModel: "Employee", // "Admin" or "Employee"
 
@@ -119,6 +119,150 @@ const applyLeave = async (req, res) => {
       success: false,
       message: "Internal server error",
     });
+  }
+};
+
+// const getEmployeeLeaveSummary = async(req,res) => {
+//   const {companyId, userId} = req.query;
+//   try{
+//   const company = await Company.findOne({_id:companyId});
+//   if(!company) return res.status(404).json({message:"Company Not Found."});
+//   const employee = await Employee.findOne({_id:userId});
+//   if(employee) return res.status(404).json({message:"Employee Not Found."});
+//  const now = new Date();
+// const year = now.getFullYear();
+// const month = now.getMonth(); // 0 = Jan, 1 = Feb, etc.
+
+// const startOfMonth = new Date(year, month, 1); // 1st day of current month
+// const endOfMonth = new Date(year, month + 1, 0, 23, 59, 59); // last day of current month
+// const approvedLeaves = await LeaveRequest.find({
+//   user: userId,
+//   status: "Approved",
+//   $or: [
+//     { fromDate: { $lte: endOfMonth }, toDate: { $gte: startOfMonth } }
+//   ]
+// });
+
+// const pendingLeaves = await LeaveRequest.find({
+//  user: userId,
+//   status: "Pending",
+//   $or: [
+//     { fromDate: { $lte: endOfMonth }, toDate: { $gte: startOfMonth } }
+//   ]
+// });
+
+// res.statu(200).json({message:"get data successfully.", approvedLeaves, pendingLeaves})
+//   }
+//   catch(err){
+//     console.log(err);
+//     res.status(500).json({message:`Server Error -: ${err?.message}`})
+//   }
+// }
+
+const getEmployeeLeaveSummary = async (req, res) => {
+  try {
+    const { companyId, userId } = req.query;
+
+    const company = await Company.findById(companyId);
+    const user = await Employee.findById(userId);
+
+    if (!company || !user) {
+      return res.status(404).json({ message: "Company or Employee not found" });
+    }
+
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+
+    // 1️⃣ Helper Function: Working Days Logic (Excluding Sundays & 1st/3rd Saturdays)
+    const countWorkingDays = (start, end) => {
+      let count = 0;
+      let current = new Date(start);
+      const last = new Date(end);
+
+      while (current <= last) {
+        const day = current.getDay(); // 0: Sun, 6: Sat
+        const date = current.getDate();
+
+        const isSunday = (day === 0);
+        
+        // 1st & 3rd Saturday Logic
+        let isOffSaturday = false;
+        if (day === 6) {
+          const weekNum = Math.ceil(date / 7);
+          if (weekNum === 1 || weekNum === 3) isOffSaturday = true;
+        }
+
+        if (!isSunday && !isOffSaturday) {
+          count++;
+        }
+        current.setDate(current.getDate() + 1);
+      }
+      return count;
+    };
+
+    // 2️⃣ Fetch Requests
+    const allRequests = await LeaveRequest.find({
+     user: userId,
+      $or: [{ fromDate: { $lte: endOfMonth }, toDate: { $gte: startOfMonth } }]
+    });
+
+    let usedLeave = 0;
+    let pendingLeave = 0;
+
+    allRequests.forEach(lv => {
+      // Intersection check (is mahine mein kitne din hain)
+      const calcStart = lv.fromDate < startOfMonth ? startOfMonth : lv.fromDate;
+      const calcEnd = lv.toDate > endOfMonth ? endOfMonth : lv.toDate;
+      
+      const days = countWorkingDays(calcStart, calcEnd);
+
+      if (lv.status === "Approved") {
+        usedLeave += days;
+      } else if (lv.status === "Pending") {
+        pendingLeave += days;
+      }
+    });
+
+    // 3️⃣ Leave Limits Calculation
+    const companyTotalLeave = company.totalLeave || 0;
+    const companySpecialLeave = company.specialLeave || 0;
+    const carryForward = user.specialLeaveBalance || 0;
+    
+    const availableSpecialLeave = companySpecialLeave + carryForward;
+    const normalLeaveLimit = companyTotalLeave - companySpecialLeave;
+
+    let usedSpecial = 0;
+    let extraLeave = 0;
+
+    if (usedLeave > normalLeaveLimit) {
+      usedSpecial = usedLeave - normalLeaveLimit;
+      if (usedSpecial > availableSpecialLeave) {
+        extraLeave = usedSpecial - availableSpecialLeave;
+        usedSpecial = availableSpecialLeave;
+      }
+    }
+
+    const remainingSpecial = availableSpecialLeave - usedSpecial;
+    const remainingLeave = Math.max(companyTotalLeave - usedLeave, 0);
+
+    // 4️⃣ Return Response
+    return res.status(200).json({
+      totalLeave: companyTotalLeave,
+      usedLeave,
+      pendingLeave,
+      remainingLeave,
+      specialLeaveBalance: remainingSpecial,
+      extraLeave,
+      details: {
+        carryForwardUsed: usedSpecial,
+        isOverLimit: extraLeave > 0
+      }
+    });
+
+  } catch (error) {
+    console.error("Leave Summary Error:", error);
+    return res.status(500).json({ message: "Server error" });
   }
 };
 
@@ -425,5 +569,6 @@ module.exports = {
   getLeaveRequestById,
   updateLeaveStatus,
   deleteLeaveRequest,
-  getMyLeaveRequestsByDate
+  getMyLeaveRequestsByDate,
+  getEmployeeLeaveSummary
 };

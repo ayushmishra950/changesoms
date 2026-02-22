@@ -1,7 +1,7 @@
 
 const express = require("express");
 const { registerAdmin, updateAdmin, deleteAdmin, loginAdmin, getUserById, updateUser, changePassword,
-  getAllAdmins, adminStatusChange, refresh, getUserWeeklyAttendanceReport, getDashboardSummary, analyticsReport, getNotificationData, deleteNotifications, deleteAllNotifications } = require("../controllers/personalOffice/authController");
+  getAllAdmins, adminStatusChange, refresh, getUserWeeklyAttendanceReport, getDashboardSummary, analyticsReport, getNotificationData, deleteNotifications, deleteAllNotifications, markAsReadNotifications } = require("../controllers/personalOffice/authController");
 
 const router = express.Router();
 
@@ -93,6 +93,7 @@ router.post("/updatepassword", changePassword);
 router.get("/dashboardsummary", getDashboardSummary);
 router.get("/report", analyticsReport);
 router.get("/notification", getNotificationData);
+router.put("/notification/read", markAsReadNotifications);
 router.delete("/notification/delete", deleteNotifications);
 router.delete("/notification/alldelete", deleteAllNotifications);
 router.put("/admin/status", adminStatusChange);

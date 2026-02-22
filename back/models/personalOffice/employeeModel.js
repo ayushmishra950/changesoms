@@ -100,10 +100,10 @@ const employeeSchema = new mongoose.Schema(
       default: "none",
     },
 
-    taskRoleDescription :{
-      type : String,
-      trim : true,
-      default : "none"
+    taskRoleDescription: {
+      type: String,
+      trim: true,
+      default: "none"
     },
     // Profile
     profileImage: {
@@ -136,6 +136,10 @@ const employeeSchema = new mongoose.Schema(
       type: String,
       trim: true,
       default: "",
+    },
+    specialLeaveBalance: {
+      type: Number,
+      default: 0
     },
     refreshToken: String
   },

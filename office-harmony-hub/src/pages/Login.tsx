@@ -41,9 +41,10 @@ const Login: React.FC = () => {
     await login(email, password, selectedRole); // wait for API
     navigate('/dashboard');                     // navigate only after success
   } catch (error: any) {
+    console.log(error)
     toast({
       title: "Login Failed",
-      description: error.message || "Something went wrong",
+      description: error.message || error?.response?.data?.message || "Something went wrong",
     });
   }
 };

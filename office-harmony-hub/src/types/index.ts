@@ -3,12 +3,13 @@ export type UserRole = 'super_admin' | 'admin' | 'employee';
 interface CompanyDetail {
   _id: string;
   name: string;
-  logo:string;
+  logo: string;
 }
 export interface User {
   _id: string;
-  username : string;
-  fullName : string;
+  username: string;
+  fullName: string;
+  profileImage: string;
   name: string;
   email: string;
   phone: string;
@@ -17,7 +18,7 @@ export interface User {
   joiningDate: string;
   avatar?: string;
   companyId?: CompanyDetail;
-  createdBy?:CompanyDetail;
+  createdBy?: CompanyDetail;
   taskRole?: string;
   taskRoleStatus?: string;
   taskRoleDescription?: string;
@@ -107,7 +108,7 @@ export interface SubTask {
   notes: string;
 }
 
-export type Status = "Pending" | "In-Progress" | "Completed" | "Blocked"  | "Overdue";
+export type Status = "Pending" | "In-Progress" | "Completed" | "Blocked" | "Overdue";
 
 export type ModalType = "view" | "edit" | "statusChange" | null;
 
@@ -129,12 +130,12 @@ export interface SubTaskFormModalProps {
   onClose: () => void;
   initialData?: any;
   setSubTaskListRefresh: (value: boolean) => void;
-  taskId:string;
+  taskId: string;
 }
 
-interface createdBy{
-  _id:string;
-  username:string;
+interface createdBy {
+  _id: string;
+  username: string;
   fullName: string;
 }
 
@@ -148,7 +149,7 @@ export interface Notification {
   read: boolean;
   createdAt: string;
   updatedAt?: string;
-  createdBy:createdBy
+  createdBy: createdBy
 }
 
 
@@ -201,7 +202,7 @@ export interface TaskFormModalProps {
   onClose: () => void;
   initialData?: any;
   setTaskListRefresh: (value: boolean) => void;
-  projectId:string;
+  projectId: string;
 }
 
 
@@ -236,7 +237,7 @@ export interface EmployeeFormDialogProps {
   isEditMode?: boolean;
   initialData: any;
   setEmployeeListRefresh: (refresh: boolean) => void;
-  selectedDepartmentName:string;
+  selectedDepartmentName: string;
 }
 
 
@@ -249,7 +250,7 @@ export interface Department {
   employeeCount: number;
 }
 
- export interface EmployeeDepartment {
+export interface EmployeeDepartment {
   _id: string;
   name: string;
   description: string;
@@ -257,11 +258,11 @@ export interface Department {
   updatedAt?: string;
 }
 
-interface Admins{
-  _id:string;
-  username:string;
-  email:string;
-  profileImage:string;
+interface Admins {
+  _id: string;
+  username: string;
+  email: string;
+  profileImage: string;
 }
 
 export interface Company {
@@ -272,20 +273,20 @@ export interface Company {
   address: string;
   email: string;
   isActive?: boolean;
-  admins?:Admins[];
-  createdAt:string; 
-  updatedAt:string;
-   createdBy?: string;
-   website?: string;
-   totalEmployees?: number;
-   location?: string;
-   industry?: string;
-   totalProjects?: string;
-   adminNames?: string;
+  admins?: Admins[];
+  createdAt: string;
+  updatedAt: string;
+  createdBy?: string;
+  website?: string;
+  totalEmployees?: number;
+  location?: string;
+  industry?: string;
+  totalProjects?: string;
+  adminNames?: string;
 }
 
-export interface recentActivity{
-  _id?:string;
+export interface recentActivity {
+  _id?: string;
   title: string;
   createdAt: string;
   updatedAt?: string;
@@ -302,11 +303,11 @@ export interface recentActivity{
   };
 }
 
-export interface Admin{
-  _id?:string;
-  username:string;
-  email:string;
-  profileImage:string;
+export interface Admin {
+  _id?: string;
+  username: string;
+  email: string;
+  profileImage: string;
   role?: string;
   mobile?: string;
   address?: string;
@@ -320,14 +321,14 @@ export interface Admin{
 };
 
 
-export interface Setting{
-  _id?:string;
-  username?:string;
-  email?:string;
-  profileImage?:string;
+export interface Setting {
+  _id?: string;
+  username?: string;
+  email?: string;
+  profileImage?: string;
   department?: string;
   contact?: string;
-  fullName?:string;
+  fullName?: string;
   role?: string;
   mobile?: string;
   address?: string;
@@ -343,7 +344,7 @@ export interface Setting{
 
 export interface Attendances {
   _id: string;
-  userId?:{
+  userId?: {
     _id?: string;
     fullName: string;
     profileImage: string;
@@ -353,7 +354,7 @@ export interface Attendances {
   clockOut?: string;
   status: "Present" | "Absent" | "Half Day" | "Late" | "Clocked In";
   hoursWorked?: number;
-  createdBy?:{
+  createdBy?: {
     _id: string;
     name?: string;
     logo: string;
@@ -364,8 +365,8 @@ export interface Attendances {
 
 
 
-export interface Employees{
-  _id?:string;
+export interface Employees {
+  _id?: string;
   fullName: string;
   email: string;
   profileImage: string;
@@ -397,7 +398,7 @@ export interface Employees{
 
 
 
-export interface leaveType{
+export interface leaveType {
   _id: string;
   name: string;
   description: string;
@@ -409,17 +410,17 @@ export interface leaveType{
 }
 
 
-export interface leaveRequest{
+export interface leaveRequest {
   _id: string;
   user: {
-     _id: string;
+    _id: string;
     fullName: string;
     profileImage: string;
   };
   leaveType: {
     _id: string;
-     name: string;
-     color: string;
+    name: string;
+    color: string;
   };
   createdBy: string;
   createdAt: string;

@@ -248,11 +248,11 @@ const Dashboard: React.FC = () => {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <button onClick={() => { navigate("/attendance") }} className="flex flex-col items-center gap-2 p-4 rounded-xl bg-primary/10 hover:bg-primary/20 transition-colors">
+                <button onClick={() => { navigate("/attendances") }} className="flex flex-col items-center gap-2 p-4 rounded-xl bg-primary/10 hover:bg-primary/20 transition-colors">
                   <Clock className="w-8 h-8 text-primary" />
                   <span className="text-sm font-medium">Clock In</span>
                 </button>
-                <button onClick={() => { navigate("/leave") }} className="flex flex-col items-center gap-2 p-4 rounded-xl bg-success/10 hover:bg-success/20 transition-colors">
+                <button onClick={() => { navigate("/leaves") }} className="flex flex-col items-center gap-2 p-4 rounded-xl bg-success/10 hover:bg-success/20 transition-colors">
                   <CalendarDays className="w-8 h-8 text-success" />
                   <span className="text-sm font-medium">Apply Leave</span>
                 </button>

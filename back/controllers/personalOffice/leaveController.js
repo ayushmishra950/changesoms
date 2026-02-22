@@ -7,7 +7,7 @@ const Company = require("../../models/personalOffice/companyModel");
  */
 const createLeave = async (req, res) => {
   try {
-    const { name, description, maxDaysAllowed, paid, color, companyId } = req.body;
+    const { name, description, paid, color, companyId } = req.body;
 
     if (!companyId) {
       return res.status(400).json({
@@ -25,10 +25,10 @@ const createLeave = async (req, res) => {
       });
     }
 
-    if (!name || maxDaysAllowed === undefined) {
+    if (!name ) {
       return res.status(400).json({
         success: false,
-        message: "Name and maxDaysAllowed are required",
+        message: "Name are required",
       });
     }
 
@@ -48,7 +48,6 @@ const createLeave = async (req, res) => {
     const leave = await Leave.create({
       name,
       description,
-      maxDaysAllowed,
       paid: paid ?? true,
       color: color || "#000000",
       createdBy: companyId, // ✅ companyId save ho rahi hai

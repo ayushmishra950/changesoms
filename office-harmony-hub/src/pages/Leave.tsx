@@ -9,7 +9,7 @@ import LeaveTypeDialog from "@/Forms/LeaveTypeDialog";
 import ApplyLeaveDialog from '@/Forms/ApplyLeaveDialog';
 import DeleteCard from "@/components/cards/DeleteCard"
 import { useToast } from '@/hooks/use-toast';
-import { getleaveRequests,getSingleleaveRequests,  getleaveTypes, leaveDelete, leaveStatusChange } from "@/services/Service";
+import { getleaveRequests,getSingleleaveRequests,getleaveDashboard,  getleaveTypes, leaveDelete, leaveStatusChange } from "@/services/Service";
 import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
 import { useNotifications } from '@/contexts/NotificationContext';
 import {formatDate} from "@/services/allFunctions";
@@ -33,10 +33,30 @@ const Leave: React.FC = () => {
   const [mode, setMode] = useState(false);
    const { notifications, markAsRead, deleteNotification } = useNotifications();
    const [allLeaveRequestRefresh, setAllLeaveRequestRefresh] = useState(false); 
+   const [leaveDashboard, setLeaveDashboard] = useState(null);
    const dispatch = useAppDispatch();
    const leaveTypes = useAppSelector((state) => state.leave.leaveTypes);
    const allLeaveRequests = useAppSelector((state) => state.leave.leaveRequests);
     const [pageLoading, setPageLoading] = useState(false);
+
+    const handleGetUserDashboard = async() =>{
+      let obj = {companyId:user?.createdBy?._id, userId:user?._id}
+      try{
+         const res = await getleaveDashboard(obj);
+         console.log(res);
+         if(res.status===200){
+           setLeaveDashboard(res.data)
+         }
+      }
+      catch(err){
+        console.log(err);
+      }
+    }
+    useEffect(()=>{
+      if(user?.role==="employee" || allLeaveRequestRefresh){
+        handleGetUserDashboard();
+      }
+    },[allLeaveRequestRefresh])
   
   const handleGetleaveTypes = async () => {
     try {
@@ -186,6 +206,8 @@ useEffect(() => {
   let pendingLeaves = filteredRequests?.filter( (leave) => leave?.status === "Pending").length;
 
   let remainingLeaves = Math.max( totalLeaves - usedLeaves, 0 );
+  let specialLeave = 0;
+  let extraLeaves = 0;
 
 
    if (pageLoading && (leaveTypes.length === 0 || allLeaveRequests.length === 0)) {
@@ -239,7 +261,7 @@ useEffect(() => {
       </div>
 
       {/* Leave Balance (Employee View) */}
-      {user?.role === 'employee' && (
+      {/* {user?.role === 'employee' && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Card>
             <CardContent className="p-4 text-center">
@@ -278,7 +300,67 @@ useEffect(() => {
           </Card>
         </div>
 
-      )}
+      )} */}
+
+
+
+      {user?.role === 'employee' && (
+  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-6 gap-4">
+
+    {/* Company Total Leaves */}
+    <Card>
+      <CardContent className="p-4 text-center">
+        <p className="text-sm text-muted-foreground">Company Leaves</p>
+        <p className="text-2xl font-bold">{leaveDashboard?.totalLeave}</p>
+      </CardContent>
+    </Card>
+
+    {/* Special Leave */}
+    <Card>
+      <CardContent className="p-4 text-center">
+        <p className="text-sm text-muted-foreground">Special Leave</p>
+        <p className="text-2xl font-bold text-primary">{leaveDashboard?.specialLeaveBalance}</p>
+      </CardContent>
+    </Card>
+
+    {/* Used Leaves */}
+    <Card>
+      <CardContent className="p-4 text-center">
+        <p className="text-sm text-muted-foreground">Used Leaves</p>
+        <p className="text-2xl font-bold text-destructive">{leaveDashboard?.usedLeave}</p>
+      </CardContent>
+    </Card>
+
+    {/* Remaining Leaves */}
+    <Card>
+      <CardContent className="p-4 text-center">
+        <p className="text-sm text-muted-foreground">Remaining</p>
+        <p className="text-2xl font-bold text-success">{leaveDashboard?.remainingLeave}</p>
+      </CardContent>
+    </Card>
+
+    {/* Pending Leaves */}
+    <Card>
+      <CardContent className="p-4 text-center">
+        <p className="text-sm text-muted-foreground">Pending</p>
+        <p className="text-2xl font-bold text-warning">{leaveDashboard?.pendingLeave}</p>
+      </CardContent>
+    </Card>
+
+    {/* Extra Leaves (Salary Cut) */}
+   <Card>
+  <CardContent className="p-4">
+    <p className="text-sm text-muted-foreground whitespace-nowrap">
+      Extra Leaves (Cut)
+    </p>
+    <p className="text-2xl font-bold text-red-600 text-center">
+      {leaveDashboard?.extraLeave}
+    </p>
+  </CardContent>
+</Card>
+
+  </div>
+)}
 
       {/* Main Content: Leave Requests and Leave Types side-by-side on larger screens */}
       <div
@@ -437,9 +519,6 @@ useEffect(() => {
                       <div className="flex items-center gap-3">
                         <span className="font-medium text-lg">{type.name}</span>
                       </div>
-                      <p className="text-sm text-muted-foreground">
-                        Max Days: <span className="font-medium">{type.maxDaysAllowed}</span>
-                      </p>
                       <p className="text-sm">{type.description}</p>
                     </div>
 

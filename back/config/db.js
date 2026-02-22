@@ -6,7 +6,6 @@ const path = require("path");
 dotenv.config();
 
 const mongoURI = process.env.MONGO_URI;
-
 if (!mongoURI) {
   console.error("MongoDB URI is not defined in .env file!");
   // process.exit(1);

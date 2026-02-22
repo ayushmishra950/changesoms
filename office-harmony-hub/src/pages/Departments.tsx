@@ -52,6 +52,7 @@ const Departments: React.FC = () => {
   const dispatch = useAppDispatch();
   const departmentList = useAppSelector((state) => state.department.departments);
   const employeeList = useAppSelector((state) => state.user.employees);
+  const filterEmployees = employeeList.filter((e)=> e?.status !== "RELIEVED")
   const filteredDepartments = departmentList.filter(
     (dept) =>
       dept.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -92,10 +93,10 @@ const Departments: React.FC = () => {
       }
     } catch (err) {
       console.log(err);
-      toast({
-        title: "Error",
-        description: err?.response?.data?.message || "Something went wrong",
-      });
+      // toast({
+      //   title: "Error",
+      //   description: err?.response?.data?.message || "Something went wrong",
+      // });
     }
     finally{
       setPageLoading(false);
@@ -107,10 +108,10 @@ const Departments: React.FC = () => {
       handleGetDepartment();
     }
 
-    if(user?.role === "admin" && (employeeList.length === 0 || employeeListRefresh)){
+    if(user?.role === "admin" && (filterEmployees.length === 0 || employeeListRefresh)){
       handleGetEmployees();
     }
-  }, [departmentRefresh, employeeListRefresh, departmentList.length, user?.companyId?._id]);
+  }, [departmentRefresh, employeeListRefresh,filterEmployees.length, departmentList.length, user?.companyId?._id]);
 
   const handleDeleteClick = (employeeId) => {
     console.log(employeeId)
@@ -146,7 +147,7 @@ const Departments: React.FC = () => {
 
 
 
-    if (pageLoading && (departmentList.length === 0 || employeeList.length === 0)) {
+    if (pageLoading && (departmentList.length === 0 || filterEmployees.length === 0)) {
   return (
     <div className="flex items-center justify-center h-screen">
       <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-primary"></div>
@@ -231,7 +232,7 @@ const Departments: React.FC = () => {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Total Employees</p>
-                <p className="text-xl font-bold">{employeeList?.length}</p>
+                <p className="text-xl font-bold">{filterEmployees?.length}</p>
               </div>
             </div>
           </CardContent>
@@ -245,7 +246,7 @@ const Departments: React.FC = () => {
               <div>
                 <p className="text-sm text-muted-foreground">Avg per Dept</p>
                 <p className="text-xl font-bold">
-                  {Math.round(employeeList?.length / departmentList?.length)}
+                  {Math.round(filterEmployees?.length / departmentList?.length)}
                 </p>
               </div>
             </div>
@@ -302,7 +303,7 @@ const Departments: React.FC = () => {
               <div className="flex items-center justify-between pt-4 border-t">
                 <div className="flex items-center gap-2">
                   <Users className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-sm font-medium">{employeeList.filter((emp) => emp.department === dept.name).length} employees</span>
+                  <span className="text-sm font-medium">{filterEmployees.filter((emp) => emp.department === dept.name).length} employees</span>
                 </div>
                 <Button
                   variant="ghost"
@@ -311,7 +312,7 @@ const Departments: React.FC = () => {
                     setDepartmentName(dept.name); // optional if still needed
                     setSelectedDepartment(dept); // pura dept object
                     setSelectedDepartmentEmployees(
-                      employeeList.filter((emp) => emp.department === dept.name)
+                      filterEmployees.filter((emp) => emp.department === dept.name)
                     );
                     setShowDepartment(true);
                   }}

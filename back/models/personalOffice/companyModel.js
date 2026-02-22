@@ -7,11 +7,14 @@ const companySchema = new mongoose.Schema({
     trim: true 
   },
 
-//   domain: {
-//   type: String,
-//   unique: true,
-//   required: [true, "Domain is required"]
-// },
+  totalLeave: {
+  type: Number,
+  default:0
+},
+ specialLeave:{
+  type:Number,
+  default:0
+ },
 
   email: { 
     type: String, 

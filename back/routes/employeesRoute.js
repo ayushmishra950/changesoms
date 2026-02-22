@@ -8,7 +8,8 @@ const {
   getEmployeeById,
   updateEmployee,
   deleteEmployee,
-  relieveEmployee
+  relieveEmployee,
+  updateEmployeeStatus
 } = require("../controllers/personalOffice/employeesController.js");
 
 const {
@@ -204,6 +205,7 @@ router.put(
   ]),
   updateEmployee
 );
+router.patch("/updateEmployee/status", updateEmployeeStatus)
 
 /**
  * @swagger

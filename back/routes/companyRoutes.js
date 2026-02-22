@@ -9,7 +9,9 @@ const {
   deleteCompany,
   assignAdmin,
   getCompanyDepartments,
-  getCompaniesFromDashboard
+  getCompaniesFromDashboard,
+  getCompanyDetail,
+  updateCompanyLeave
 } = require("../controllers/personalOffice/companyController");
 const upload = require("../middleware/upload.js");
 
@@ -25,6 +27,9 @@ router.get("/:id", getCompanies);
 // ---------------- Get Company by ID ----------------
 // GET /api/companies/:id
 router.get("/:id", getCompanyById);
+
+router.get("/detail/company", getCompanyDetail);
+router.patch("/update/Leave", updateCompanyLeave);
 
 // ---------------- Update Company ----------------
 // PUT /api/companies/:id

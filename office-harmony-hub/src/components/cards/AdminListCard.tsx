@@ -37,17 +37,16 @@ const AdminListCard: React.FC<AdminListCardProps> = ({
   handleDeleteClick,
   handleStatusChange
 }) => {
-  if (!adminList.length) {
+  const filterAdmins = adminList?.filter((admin)=> admin?.role !== "super_admin");
+  if (!filterAdmins.length) {
     return (
-      <p className="text-center text-muted-foreground">No admins found.</p>
+      <p className="text-center pt-36 text-muted-foreground">No admins found.</p>
     );
   }
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-      {adminList
-        .filter((admin) => admin.role !== "super_admin")
-        .map((admin) => (
+      {filterAdmins?.map((admin) => (
           <div
             key={admin._id}
             className="border rounded-lg p-4 shadow-sm hover:shadow-md transition relative"

@@ -374,48 +374,70 @@ export default function Expenses() {
                   <TableHead className="text-right">Action</TableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody>
-                {filteredExpenses.map((expense) => (
-                  <TableRow key={expense.id}>
-                    <TableCell className="text-sm">
-                      {new Date(expense.date).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' })}
-                    </TableCell>
-                    <TableCell>
-                      <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${getCategoryColor(expense.category)}`}>
-                        {expense.category}
-                      </span>
-                    </TableCell>
-                    <TableCell className="font-medium">₹{expense.amount.toLocaleString()}</TableCell>
-                    <TableCell className="hidden md:table-cell">{expense.paidBy}</TableCell>
-                    <TableCell className="hidden lg:table-cell max-w-xs truncate">{expense.notes || "-"}</TableCell>
-                    <TableCell className="text-right flex items-center justify-end gap-2">
-                      {/* Edit Button */}
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        title="Edit (disabled in demo)"
-                        className="hover:bg-blue-600 group"
-                       onClick={() => {setInitialData(expense);setIsEditMode(true);setIsDialogOpen(true);}}
+             <TableBody>
+  {filteredExpenses.length > 0 ? (
+    filteredExpenses.map((expense) => (
+      <TableRow key={expense.id}>
+        <TableCell className="text-sm">
+          {new Date(expense.date).toLocaleDateString('en-IN', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+          })}
+        </TableCell>
+        <TableCell>
+          <span
+            className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${getCategoryColor(
+              expense.category
+            )}`}
+          >
+            {expense.category}
+          </span>
+        </TableCell>
+        <TableCell className="font-medium">
+          ₹{expense.amount.toLocaleString()}
+        </TableCell>
+        <TableCell className="hidden md:table-cell">
+          {expense.paidBy}
+        </TableCell>
+        <TableCell className="hidden lg:table-cell max-w-xs truncate">
+          {expense.notes || "-"}
+        </TableCell>
+        <TableCell className="text-right flex items-center justify-end gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="hover:bg-blue-600 group"
+            onClick={() => {
+              setInitialData(expense);
+              setIsEditMode(true);
+              setIsDialogOpen(true);
+            }}
+          >
+            <Edit className="h-4 w-4 text-amber-600 group-hover:text-white" />
+          </Button>
 
-                      >
-                        <Edit className="h-4 w-4 text-amber-600 group-hover:text-white" />
-                      </Button>
-
-                      {/* Delete Button */}
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        title="Delete (disabled in demo)"
-                        className="hover:bg-blue-600 group"
-                        onClick={()=>{handleDeleteClick(expense?._id)}}
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive group-hover:text-white" />
-                      </Button>
-                    </TableCell>
-
-                  </TableRow>
-                ))}
-              </TableBody>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="hover:bg-blue-600 group"
+            onClick={() => {
+              handleDeleteClick(expense?._id);
+            }}
+          >
+            <Trash2 className="h-4 w-4 text-destructive group-hover:text-white" />
+          </Button>
+        </TableCell>
+      </TableRow>
+    ))
+  ) : (
+    <TableRow>
+      <TableCell colSpan={6} className="text-center py-6 text-gray-500">
+        No expenses found.
+      </TableCell>
+    </TableRow>
+  )}
+</TableBody>
             </Table>
           </div>
         </CardContent>

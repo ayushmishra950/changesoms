@@ -18,12 +18,6 @@ const leaveSchema = new mongoose.Schema(
           ref: "Company",
           required: true,
         },
-
-    maxDaysAllowed: {
-      type: Number,
-      required: true,
-      min: 1,
-    },
     paid: {
       type: Boolean,
       default: true,

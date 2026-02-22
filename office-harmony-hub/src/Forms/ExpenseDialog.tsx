@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,6 +31,7 @@ const ExpenseDialog = ({
   const today = new Date().toISOString().split("T")[0];
   const [categoryListRefresh, setCategoryListRefersh] = useState(false);
   const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
+    const dateRef = useRef(null);
   const dispatch = useAppDispatch();
    const categoriesList = useAppSelector((state) => state.expense.expenseCategory);  
  
@@ -139,11 +140,13 @@ const ExpenseDialog = ({
                   <Label>Date *</Label>
                   <Input
                     type="date"
+                    ref={dateRef}
                     min={today}   // 🔴 past disable
                     value={formatDateFromInput(expense?.date)}
                     onChange={(e) =>
                       setExpense({ ...expense, date: e.target.value })
                     }
+                    onClick={()=>{if(dateRef.current?.showPicker){dateRef?.current?.showPicker()}}}
                   />
                 </div>
 

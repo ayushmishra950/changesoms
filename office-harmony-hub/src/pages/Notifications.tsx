@@ -1,44 +1,72 @@
 
 import React, { useEffect, useState } from "react";
-import { Bell, FolderKanban, CalendarDays, Receipt, Clock, ArrowLeft } from "lucide-react";
+import { Bell, FolderKanban, CalendarDays, Receipt, Clock } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useNotifications } from "@/contexts/NotificationContext";
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { getNotificationData, deleteNotifications, deleteAllNotifications } from "@/services/Service";
+import { deleteNotifications, deleteAllNotifications } from "@/services/Service";
 import DeleteCard from "@/components/cards/DeleteCard";
 import { Trash } from "lucide-react";
 import { Helmet } from "react-helmet-async";
+import { useNavigate } from "react-router-dom";
 
 const Notifications: React.FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const { notifications, markAsRead, deleteNotification } = useNotifications();
-  const [notificationList, setNotificationList] = useState([]);
+  const navigate = useNavigate();
+  const { notifications, markAsRead, deleteNotification, markAllAsRead, refreshNotifications } = useNotifications();
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [selectedNotificationId, setSelectedNotificationId] = useState(null);
 
+  useEffect(() => {
+    // Mark all as read when visiting the page
+    markAllAsRead();
+    // Also ensure we have latest data
+    refreshNotifications();
+  }, [markAllAsRead, refreshNotifications]);
+
   const getTypeIcon = (type: string) => {
     switch (type) {
       case "task":
+      case "subtask":
         return <FolderKanban className="w-5 h-5 text-primary" />;
       case "leave":
-        return <CalendarDays className="w-5 h-5 text-success" />;
+        return <CalendarDays className="w-5 h-5 text-green-500" />;
       case "expense":
-        return <Receipt className="w-5 h-5 text-warning" />;
+        return <Receipt className="w-5 h-5 text-yellow-500" />;
       default:
-        return <Bell className="w-5 h-5 text-info" />;
+        return <Bell className="w-5 h-5 text-blue-500" />;
     }
   };
 
-  useEffect(() => {
-    if (notifications) {
-      setNotificationList(prev => [notifications, ...prev]);
+  const handleNotificationClick = (notification: any) => {
+    markAsRead(notification._id);
+    switch (notification.type) {
+      case "task":
+      case "subtask":
+        navigate("/tasks");
+        break;
+      case "leave":
+        navigate("/leaves");
+        break;
+      case "attendance":
+        navigate("/attendances");
+        break;
+      case "expense":
+        navigate("/expenses");
+        break;
+      case "project":
+        navigate("/tasks/projects");
+        break;
+      default:
+        // No specific route
+        break;
     }
-  }, [notifications]);
+  };
 
   const handleConfirmDelete = async () => {
     setIsDeleting(true);
@@ -48,15 +76,12 @@ const Notifications: React.FC = () => {
         if (!user?._id) {
           throw new Error("User not found");
         }
-
         if (!companyId) {
           throw new Error("Company not found");
         }
       }
 
-
       let res;
-
       if (!selectedNotificationId) {
         // delete all notifications
         res = await deleteAllNotifications(user._id, companyId);
@@ -70,13 +95,13 @@ const Notifications: React.FC = () => {
       }
 
       if (res?.status === 200) {
-        handleGetNotificationData();
+        refreshNotifications();
         toast({
           title: "Notification Deleted",
           description: res?.data?.message,
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
       toast({
         title: "Error",
@@ -89,39 +114,15 @@ const Notifications: React.FC = () => {
     } finally {
       setIsDeleting(false);
       setIsDeleteDialogOpen(false);
+      setSelectedNotificationId(null);
     }
   };
-
-
-  const handleGetNotificationData = async () => {
-    try {
-      if (user && user?.role !== "super_admin") { if (!user?._id || (!user?.companyId?._id && !user?.createdBy?._id)) return toast({ title: "Error", description: "required field Missing.", variant: "destructive" }); }
-      const res = await getNotificationData(user?._id, user?.companyId?._id || user?.createdBy?._id);
-      console.log(res);
-      if (res.status === 200) {
-        setNotificationList(res?.data?.notification)
-      }
-    }
-    catch (error) {
-      console.error(error);
-      toast({
-        title: "Error",
-        description: error?.response?.data?.message || error?.response?.data || "Something went wrong",
-        variant: "destructive"
-      });
-    }
-  }
-
-  useEffect(() => {
-    handleGetNotificationData();
-  }, [])
-  const unreadCount = notifications.filter((n) => !n.read).length;
 
   return (
     <>
       <Helmet>
         <title>Notification Page</title>
-        <meta name="description" content="This is the home page of our app" />
+        <meta name="description" content="View and manage your notifications" />
       </Helmet>
 
       <DeleteCard
@@ -129,19 +130,18 @@ const Notifications: React.FC = () => {
         onClose={() => setIsDeleteDialogOpen(false)}
         onConfirm={handleConfirmDelete}
         isDeleting={isDeleting}
-        title={selectedNotificationId ? "Delete  Notification Message?" : "Delete All Notification Message?"}
-        message={selectedNotificationId ? `This Action Will Permanently Delete This Notification Message.` : `This Action Will Permanently Delete All Notification Message.`}
+        title={selectedNotificationId ? "Delete Notification Message?" : "Delete All Notification Messages?"}
+        message={selectedNotificationId ? `This Action Will Permanently Delete This Notification Message.` : `This Action Will Permanently Delete All Notification Messages.`}
       />
       <div className="space-y-6">
         {/* Header */}
         <div className="flex flex-row items-end sm:justify-end gap-4 md:mt-[-20px]">
           <Button
             variant="outline"
-            onClick={() => { setIsDeleteDialogOpen(true) }}
-
+            onClick={() => { setSelectedNotificationId(null); setIsDeleteDialogOpen(true) }}
           >
-            <Trash size={18} className="text-red-500" />
-            All Deleted
+            <Trash size={18} className="text-red-500 mr-2" />
+            Clear All
           </Button>
         </div>
 
@@ -152,16 +152,17 @@ const Notifications: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-1">
-              {notificationList?.length === 0 && (
+              {notifications?.length === 0 && (
                 <div className="text-center py-12">
                   <Bell className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
                   <p className="text-muted-foreground">No notifications yet.</p>
                 </div>
               )}
 
-              {notificationList?.map((notification) => (
+              {notifications?.map((notification) => (
                 <div
                   key={notification?._id}
+                  onClick={() => handleNotificationClick(notification)}
                   className={cn(
                     "flex gap-4 p-4 rounded-lg transition-colors cursor-pointer",
                     !notification.read
@@ -174,21 +175,17 @@ const Notifications: React.FC = () => {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-4">
-                      <div onClick={() => markAsRead(notification._id)}>
+                      <div>
                         <h3
                           className={cn(
                             "font-medium",
                             !notification.read && "text-primary"
                           )}
                         >
-                          {/* Show message with createdBy full name */}
                           {notification?.createdBy
                             ? `${notification?.createdBy.fullName || notification?.createdBy.username} : ${notification.message}`
                             : notification.message}
                         </h3>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          {/* Optional extra info can go here */}
-                        </p>
                       </div>
 
                       {!notification.read && (
@@ -198,7 +195,11 @@ const Notifications: React.FC = () => {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => { setSelectedNotificationId(notification?._id); setIsDeleteDialogOpen(true) }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedNotificationId(notification?._id);
+                          setIsDeleteDialogOpen(true)
+                        }}
                       >
                         <Trash size={18} className="text-red-500" />
                       </Button>

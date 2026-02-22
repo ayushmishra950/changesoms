@@ -35,8 +35,9 @@ const addDepartment = async (req, res) => {
       department: newDept,
     });
   } catch (err) {
+    if(err?.code===11000) return res.status(500).json({message:"this department name is already exist."})
     console.error(err);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: `Server error:- ${err?.message}` });
   }
 };
 

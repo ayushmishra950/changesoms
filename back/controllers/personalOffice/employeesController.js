@@ -6,7 +6,8 @@ const bcrypt = require("bcryptjs");
 const recentActivity = require("../../models/personalOffice/recentActivityModel.js");
 const Task = require("../../models/personalOffice/taskModel.js");
 const SubTask = require("../../models/personalOffice/SubtaskModel.js");
-
+const Company = require("../../models/personalOffice/companyModel.js");
+const mongoose = require("mongoose");
 // ---------------- Add Employee Controller ----------------
 
 const addEmployee = async (req, res) => {
@@ -78,8 +79,8 @@ const addEmployee = async (req, res) => {
       profileImage: await upload(files?.profileImage?.[0]),
       documents: {
         salarySlip: await upload(files?.salarySlip?.[0]),
-        aadhaar: await upload(files?.aadhaar?.[0]),
-        panCard: await upload(files?.panCard?.[0]),
+        aadhaar: (await upload(files?.aadhaar?.[0])) || req.body.aadhaar || "",
+        panCard: (await upload(files?.panCard?.[0])) || req.body.panCard || "",
         bankPassbook: await upload(files?.bankPassbook?.[0]),
       },
     });
@@ -115,23 +116,58 @@ const addEmployee = async (req, res) => {
 };
 
 
+// ----------------update Reliveve Employee----------
+const updateEmployeeStatus = async (req, res) => {
+  const { adminId, employeeId, companyId, status } = req.body;
+  try {
+    const company = await Company.findOne({ _id: companyId });
+    if (!company) return res.status(404).json({ message: "Company Not Found." });
+    const admin = await Admin.findOne({ _id: adminId, companyId });
+    if (!admin) return res.status(404).json({ message: "Admin Not FOund." });
+    const employee = await Employee.findOne({ _id: employeeId, createdBy: companyId });
+    if (!employee) return res.status(404).json({ message: "Employee Not Found." });
+
+    employee.status = status;
+    employee.save();
+    res.status(200).json({ message: "Employee Status Active Successfully." });
+
+  }
+  catch (err) {
+    console.log(err);
+    res.status(500).json({ message: `Error- ${err?.message}` })
+  }
+}
 
 // ---------------- Get All Employees ----------------
+
 const getEmployees = async (req, res) => {
   try {
     const { companyId } = req.params;
-    if (!companyId) {
+
+    if (!companyId || companyId === "undefined") {
       return res.status(400).json({ message: "Company ID is required" });
     }
 
-    const employees = await Employee.find({ createdBy: companyId }).sort({ createdAt: -1 });
+    // ObjectId validation
+    if (!mongoose.Types.ObjectId.isValid(companyId)) {
+      return res.status(400).json({ message: "Invalid Company ID" });
+    }
+
+    const employees = await Employee.find({
+      createdBy: companyId
+    }).sort({ createdAt: -1 });
+
+    if (employees.length === 0) {
+      return res.status(404).json({ message: "Employee Not Found." });
+    }
+
     return res.status(200).json(employees);
+
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ message: "Server error" });
+    return res.status(500).json({ message: err.message }); // better debugging
   }
 };
-
 
 // ---------------- Get Employee by ID ----------------
 const getEmployeeById = async (req, res) => {
@@ -278,11 +314,15 @@ const updateEmployee = async (req, res) => {
     if (files?.aadhaar?.[0]) {
       const aadhaar = await upload(files.aadhaar[0]);
       documentUpdates["documents.aadhaar"] = aadhaar;
+    } else if (req.body.aadhaar) {
+      documentUpdates["documents.aadhaar"] = req.body.aadhaar;
     }
 
     if (files?.panCard?.[0]) {
       const pan = await upload(files.panCard[0]);
       documentUpdates["documents.panCard"] = pan;
+    } else if (req.body.panCard) {
+      documentUpdates["documents.panCard"] = req.body.panCard;
     }
 
     if (files?.bankPassbook?.[0]) {
@@ -447,5 +487,6 @@ module.exports = {
   updateEmployee,
   deleteEmployee,
   relieveEmployee,
-  relieveEmployee
+  relieveEmployee,
+  updateEmployeeStatus
 };

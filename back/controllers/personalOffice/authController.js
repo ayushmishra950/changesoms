@@ -1322,7 +1322,7 @@ const getNotificationData = async (req, res) => {
     const notificationQuery = { userId };
     if (validCompanyId) notificationQuery.companyId = validCompanyId;
 
-    const notification = await Notification.find(notificationQuery).populate("createdBy");
+    const notification = await Notification.find(notificationQuery).populate("createdBy").sort({ createdAt: -1 });
 
     res.status(200).json({ notification, success: true, message: "successfully." });
   } catch (err) {
@@ -1430,6 +1430,27 @@ const deleteAllNotifications = async (req, res) => {
 
 
 
+
+
+// Mark notifications as read
+const markAsReadNotifications = async (req, res) => {
+  try {
+    const { userId, companyId } = req.body;
+
+    if (!userId) return res.status(400).json({ message: "userId is required" });
+
+    let filter = { userId, status: "unread" };
+    if (companyId) filter.companyId = companyId;
+
+    await Notification.updateMany(filter, { $set: { status: "read" } });
+
+    res.status(200).json({ message: "Notifications marked as read" });
+  } catch (err) {
+    console.error("Mark Read Error:", err);
+    return res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
 // Export
 module.exports = {
   registerAdmin,
@@ -1445,6 +1466,7 @@ module.exports = {
   getNotificationData,
   deleteNotifications,
   deleteAllNotifications,
+  markAsReadNotifications,
   adminStatusChange,
   refresh,
   logout,

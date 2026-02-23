@@ -28,7 +28,21 @@ export const formatDateFromInput = (date: string | Date | undefined) => {
   if (!date) return "";
   return new Date(date).toISOString().split("T")[0];
 };
+export const getDaysBetween = (
+  startDate: string | Date,
+  endDate: string | Date
+): number => {
+  const start = new Date(startDate);
+  const end = new Date(endDate);
 
+  start.setHours(0, 0, 0, 0);
+  end.setHours(0, 0, 0, 0);
+
+  const diffTime = end.getTime() - start.getTime(); // ✅ FIX
+  const diffDays = diffTime / (1000 * 60 * 60 * 24);
+
+  return diffDays + 1; // inclusive
+};
 // Convert "HH:mm" to AM/PM format safely
 export const formatClock = (time) => {
   if (!time) return "—"; // missing data case

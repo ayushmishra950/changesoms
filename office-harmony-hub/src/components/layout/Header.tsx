@@ -114,13 +114,13 @@ const Header: React.FC<HeaderProps> = ({ taskName, activeSidebar, taskSubPage, j
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 className="cursor-pointer"
-                onClick={() => navigate("/settings")}
+                onClick={() => navigate("/setting")}
               >
                 Profile
               </DropdownMenuItem>
               <DropdownMenuItem
                 className="cursor-pointer"
-                onClick={() => navigate("/settings")}
+                onClick={() => navigate("/setting")}
               >
                 Settings
               </DropdownMenuItem>

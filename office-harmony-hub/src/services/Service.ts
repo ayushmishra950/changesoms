@@ -781,7 +781,7 @@ export const handleAddPdfLetter = async (obj: any): Promise<{ success: boolean; 
 
 
 
-
+// job-portal k liye
 
 export const addRole = async (obj: any) => {
   const res = await axios.post(
@@ -825,9 +825,72 @@ export const updateRole = async (id: string, obj: any) => {
 
 export const roleStatusChange = async (obj: any) => {
   const res = await axios.patch(
-    `${import.meta.env.VITE_API_URL}/api/role/toggle`,
+    `${import.meta.env.VITE_API_URL}/api/role/toggle/status`,
     obj
   );
+
+  return res;
+}
+
+
+
+
+
+
+export const addCandidate = async (obj: any) => {
+  const res = await axios.post(
+    `${import.meta.env.VITE_API_URL}/api/candidate/add`,
+    obj
+  );
+
+  return res;
+}
+
+
+
+export const getAllCandidates = async () => {
+  const res = await axios.get(
+    `${import.meta.env.VITE_API_URL}/api/candidate/get`
+  );
+
+  return res;
+}
+
+
+export const getSingleCandidate = async (obj: any) => {
+  const res = await axios.get(
+    `${import.meta.env.VITE_API_URL}/api/candidate/getbyid`,
+    obj
+  );
+
+  return res;
+}
+
+
+export const updateCandidate = async (obj: any) => {
+  const res = await axios.put(
+    `${import.meta.env.VITE_API_URL}/api/candidate/update`,
+    obj
+  );
+
+  return res;
+}
+
+
+export const candidateStatusChange = async (obj: any) => {
+  const res = await axios.patch(
+    `${import.meta.env.VITE_API_URL}/api/candidate/update/status`,
+    obj
+  );
+
+  return res;
+}
+
+
+
+export const deleteCandidate = async (id: string) => {
+  const res = await axios.delete(
+    `${import.meta.env.VITE_API_URL}/api/candidate/delete/${id}`);
 
   return res;
 }

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -6,29 +6,116 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, Upload, Briefcase, User, GraduationCap, CheckCircle, Mail, Phone, DollarSign, MapPin, Backpack, ArrowLeft } from "lucide-react";
 import { Label } from "@/components/ui/label";
+import { useAppDispatch, useAppSelector } from "@/redux-toolkit/hooks/hook";
+import RoleDialog from "./RoleDialog";
+import { getRoles } from "@/redux-toolkit/slice/job-portal/roleSlice";
+import { getAllRole, addCandidate, updateCandidate } from "@/services/Service";
+import { title } from "process";
+import { useToast } from "@/hooks/use-toast";
 
 interface AddCandidateFormProps {
   isOpen: boolean;
   onClose: () => void;
+  initialData?: any;
 }
 
-const AddCandidateForm: React.FC<AddCandidateFormProps> = ({ isOpen, onClose }) => {
+const AddCandidateForm: React.FC<AddCandidateFormProps> = ({ isOpen, onClose, initialData }) => {
+  const { toast } = useToast();
+  const dobRef = useRef(null);
   const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [form, setForm] = useState({
-    name: "", email: "", mobile: "", resume: null, gender: "male", dob: "", address: "", designation: "", totalExperience: "", relevantExperience: "", currentCTC: "", expectedSalary: "", noticePeriod: "", employmentType: "", preferredLocation: "", skills: "", highestQualification: "", university: "", yearOfPassing: "", status: "", remarks: ""
+    name: "", email: "", mobile: "", role: "", resume: null, gender: "male", dob: "", address: "", designation: "", totalExperience: "", relevantExperience: "", currentCTC: "", expectedSalary: "", noticePeriod: "", employmentType: "fullTime", preferredLocation: "", skills: [], highestQualification: "", universityName: "", passingYear: "", remarks: ""
   });
+  const [isRoleFormOpen, setIsRoleFormOpen] = useState(false);
+  const [roleListRefresh, setRoleListRefresh] = useState(false);
+  const dispatch = useAppDispatch();
+  const roleList = useAppSelector((state) => state?.role?.roles);
+  const isEdit = Boolean(initialData);
+
+  useEffect(() => {
+    if (initialData) {
+      setForm({
+        name: initialData?.name || "",
+        email: initialData?.email || "",
+        mobile: initialData?.mobile || "",
+        role: initialData?.role?._id || "",
+        resume: initialData?.resume || null,
+        gender: initialData?.gender || "male",
+        dob: initialData?.dob ? new Date(initialData.dob).toISOString().split("T")[0] : "",
+        address: initialData?.address || "",
+        designation: initialData?.designation || "",
+        totalExperience: initialData?.totalExperience || "",
+        relevantExperience: initialData?.relevantExperience || "",
+        currentCTC: initialData?.currentCTC || "",
+        expectedSalary: initialData?.expectedSalary || "",
+        noticePeriod: initialData?.noticePeriod || "",
+        employmentType: initialData?.employmentType || "fullTime",
+        preferredLocation: initialData?.preferredLocation || "",
+        skills: initialData?.skills || [],
+        highestQualification: initialData?.highestQualification || "",
+        universityName: initialData?.universityName || "",
+        passingYear: initialData?.passingYear || "",
+        remarks: initialData?.remarks || ""
+      });
+    }
+  }, [initialData]);
 
   const resetForm = () => {
     setForm({
-      name: "", email: "", mobile: "", resume: null, gender: "male", dob: "", address: "", designation: "", totalExperience: "", relevantExperience: "", currentCTC: "", expectedSalary: "", noticePeriod: "", employmentType: "", preferredLocation: "", skills: "", highestQualification: "", university: "", yearOfPassing: "", status: "", remarks: ""
+      name: "", email: "", mobile: "", role: "", resume: null, gender: "male", dob: "", address: "", designation: "", totalExperience: "", relevantExperience: "", currentCTC: "", expectedSalary: "", noticePeriod: "", employmentType: "fullTime", preferredLocation: "", skills: [], highestQualification: "", universityName: "", passingYear: "", remarks: ""
     });
     setStep(1);
     setIsLoading(false);
   }
 
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+    const payload = { ...form, id: isEdit ? initialData?._id : null }
+    try {
+      const res = await (isEdit ? updateCandidate(payload) : addCandidate(payload));
+      if (res.status === 200 || res.status === 201) {
+        toast({ title: `${isEdit ? "Updated" : "Added"} Candidate.`, description: res?.data?.message })
+      }
+    }
+    catch (error) {
+      console.log(error);
+      toast({ title: "Error Candidate.", description: error?.response?.data?.message || error?.message, variant: "destructive" })
+    }
+    finally {
+      setIsLoading(false);
+      resetForm();
+      onClose();
+    }
+  }
+
+  const getAllRoles = async () => {
+    try {
+      const res = await getAllRole();
+      console.log(res);
+      dispatch(getRoles(res?.data?.data));
+      setRoleListRefresh(false);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  useEffect(() => {
+    if (roleList?.length === 0 || roleListRefresh) {
+      getAllRoles();
+    }
+  }, [roleList?.length, roleListRefresh, setRoleListRefresh]);
+
   return (
     <>
+      <RoleDialog
+        isOpen={isRoleFormOpen}
+        onClose={() => { setIsRoleFormOpen(false) }}
+        setRoleListRefresh={setRoleListRefresh}
+        initialData={null}
+      />
+
       <Dialog open={isOpen} onOpenChange={() => { resetForm(); onClose() }}>
         <DialogContent>
           <DialogHeader>
@@ -42,7 +129,7 @@ const AddCandidateForm: React.FC<AddCandidateFormProps> = ({ isOpen, onClose }) 
               Add a new candidate to the system. Step-{step}
             </DialogDescription>
           </DialogHeader>
-          <form>
+          <form onSubmit={handleSubmit}>
             {step === 1 && (
               <>
                 <Label className="block mb-2 mt-[-10px] text-xs">Name*</Label>
@@ -71,18 +158,81 @@ const AddCandidateForm: React.FC<AddCandidateFormProps> = ({ isOpen, onClose }) 
                         <SelectItem value="other">Other</SelectItem>
                       </SelectContent>
                     </Select>
-                    {/* <Input type="text" value={form?.gender} onChange={(e) => { setForm({ ...form, gender: e.target.value }) }} placeholder="Gender" className="placeholder:text-xs" /> */}
                   </div>
 
                   <div className="flex-1 ml-2">
                     <Label className="block my-2 text-xs">DOB*</Label>
-                    <Input type="date" value={form?.dob} required onChange={(e) => { setForm({ ...form, dob: e.target.value }) }} placeholder="Date of birth" className="placeholder:text-xs" />
+                    <Input type="date" ref={dobRef} value={form?.dob} required onChange={(e) => { setForm({ ...form, dob: e.target.value }) }} placeholder="Date of birth" className="placeholder:text-xs" onClick={() => { if (dobRef.current?.showPicker) { dobRef.current?.showPicker() } }} />
                   </div>
 
                 </div>
+                <div className="flex flex-row justify-between gap-2">
+                  {/* Address Input */}
+                  <div className="flex-1">
+                    <Label className="block my-2 text-xs">Address*</Label>
+                    <Input
+                      type="text"
+                      value={form?.address}
+                      required
+                      onChange={(e) => setForm({ ...form, address: e.target.value })}
+                      placeholder="Residential address"
+                      className="placeholder:text-xs"
+                    />
+                  </div>
 
-                <Label className="block my-2 text-xs">Address*</Label>
-                <Input type="text" value={form?.address} required onChange={(e) => { setForm({ ...form, address: e.target.value }) }} placeholder="Residential address" className="placeholder:text-xs" />
+                  {/* Role Select */}
+                  <div className="flex-1">
+                    <Label className="block my-2 text-xs">Role</Label>
+
+                    {roleList?.length > 0 ? (
+                      <Select
+                        value={form?.role}
+                        required
+                        onValueChange={(value: string) => setForm({ ...form, role: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a role" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {roleList.filter((v) => v?.isActive !== false).map((role) => (
+                            <SelectItem key={role._id} value={role._id}>
+                              {role.name}
+                            </SelectItem>
+                          ))}
+
+                          {/* Add New Button as last item */}
+                          <div className="px-2 py-1 border-t mt-1">
+                            <button
+                              type="button"
+                              className="text-sm text-primary hover:underline w-full text-left"
+                              onClick={() => { setIsRoleFormOpen(true) }}
+                            >
+                              + Add New Role
+                            </button>
+                          </div>
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <div>
+                        <Select disabled>
+                          <SelectTrigger>
+                            <SelectValue placeholder="No roles available" />
+                          </SelectTrigger>
+                        </Select>
+                        <p className="text-xs text-muted mt-1 flex items-center justify-between gap-2">
+                          Add role first
+                          <button
+                            type="button"
+                            onClick={() => { setIsRoleFormOpen(true) }}
+                            className="px-2 py-1 text-xs bg-primary text-white rounded"
+                          >
+                            Add
+                          </button>
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
                 <div className="flex flex-row justify-between mt-2">
                   <div className="flex-1 ">
                     <Label className="block my-2 text-xs">Desigation*</Label>
@@ -124,7 +274,17 @@ const AddCandidateForm: React.FC<AddCandidateFormProps> = ({ isOpen, onClose }) 
                   <div className="flex flex-row justify-between">
                     <div className="flex-1">
                       <Label className="block my-2 text-xs">Employment Type*</Label>
-                      <Input type="text" value={form?.employmentType} required onChange={(e) => { setForm({ ...form, employmentType: e.target.value }) }} placeholder="Employment type" className="placeholder:text-xs" />
+                      <Select value={form?.employmentType || "fullTime"} required onValueChange={(value: string) => { setForm({ ...form, employmentType: value }) }}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a employment type" />
+                        </SelectTrigger>
+                        <SelectContent className="text-xs">
+                          <SelectItem value="fullTime">Full Time</SelectItem>
+                          <SelectItem value="partTime">Part Time</SelectItem>
+                          <SelectItem value="contract">Contract</SelectItem>
+                          <SelectItem value="remote">Remote</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div className="flex-1 ml-2">
                       <Label className="block my-2 text-xs">Preferred Location*</Label>
@@ -134,15 +294,22 @@ const AddCandidateForm: React.FC<AddCandidateFormProps> = ({ isOpen, onClose }) 
                   <div className="flex flex-row justify-between">
                     <div className="flex-1">
                       <Label className="block my-2 text-xs">Skills*</Label>
-                      <Input type="text" value={form?.skills} required onChange={(e) => { setForm({ ...form, skills: e.target.value }) }} placeholder="Key skills" className="placeholder:text-xs" />
+                      <Input
+                        type="text"
+                        value={form?.skills?.join(", ")} // Array ko display karne ke liye join
+                        required
+                        onChange={(e) => {
+                          // Input ko comma se split karke array me convert karna
+                          const skillsArray = e.target.value.split(",").map(skill => skill.trim());
+                          setForm({ ...form, skills: skillsArray });
+                        }}
+                        placeholder="Key skills (comma separated)"
+                        className="placeholder:text-xs"
+                      />
                     </div>
-                    {/* <div className="flex-1 ml-2">
-                      <Label className="block my-2 text-xs">Resume Upload*</Label>
-                      <Input type="file" value={form?.resume} required onChange={(e) => { setForm({ ...form, resume: e.target.value }) }} placeholder="Upload resume" className="placeholder:text-xs" />
-                    </div> */}
 
                     <div className="flex-1 ml-2">
-                      <Label className="block my-2 text-xs">Resume Upload*</Label>
+                      <Label className="block my-2 text-xs">Resume Upload(Optional)</Label>
                       <div className="relative">
                         {/* Hidden actual file input */}
                         <Input
@@ -173,17 +340,13 @@ const AddCandidateForm: React.FC<AddCandidateFormProps> = ({ isOpen, onClose }) 
                     </div>
                     <div className="flex-1 ml-2">
                       <Label className="block my-2 text-xs">University/School Name*</Label>
-                      <Input type="text" value={form?.university} required onChange={(e) => { setForm({ ...form, university: e.target.value }) }} placeholder="University/School name" className="placeholder:text-xs" />
+                      <Input type="text" value={form?.universityName} required onChange={(e) => { setForm({ ...form, universityName: e.target.value }) }} placeholder="University/School name" className="placeholder:text-xs" />
                     </div>
                   </div>
                   <div className="flex flex-row justify-between">
                     <div className="flex-1">
                       <Label className="block my-2 text-xs">Passing Year*</Label>
-                      <Input type="text" value={form?.yearOfPassing} required onChange={(e) => { setForm({ ...form, yearOfPassing: e.target.value }) }} placeholder="Year of passing" className="placeholder:text-xs" />
-                    </div>
-                    <div className="flex-1 ml-2">
-                      <Label className="block my-2 text-xs">Candidate Status*</Label>
-                      <Input type="text" value={form?.status} required onChange={(e) => { setForm({ ...form, status: e.target.value }) }} placeholder="Candidate status" className="placeholder:text-xs" />
+                      <Input type="text" value={form?.passingYear} required onChange={(e) => { setForm({ ...form, passingYear: e.target.value }) }} placeholder="Year of passing" className="placeholder:text-xs" />
                     </div>
                   </div>
                   <div>
@@ -194,7 +357,7 @@ const AddCandidateForm: React.FC<AddCandidateFormProps> = ({ isOpen, onClose }) 
                   <div className="flex flex-row justify-end">
                     <Button type="button" variant="outline" className="text-sm mx-2 mt-2" onClick={() => { setStep(1) }}>Back</Button>
                     <Button
-                      disabled={isLoading || !form.expectedSalary || !form?.noticePeriod || !form?.employmentType || !form?.preferredLocation || !form?.skills || !form?.resume || !form?.highestQualification || !form?.university || !form?.yearOfPassing || !form?.status}
+                      disabled={isLoading || !form.expectedSalary || !form?.noticePeriod || !form?.employmentType || !form?.preferredLocation || !form?.skills || !form?.highestQualification || !form?.universityName || !form?.passingYear}
                       type="submit" variant="default" className="text-sm mx-2 mt-2">
                       {isLoading && <Loader2 className="animate-spin" />}
                       {isLoading ? "Submiting..." : "Submit"}

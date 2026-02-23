@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -13,9 +13,10 @@ interface AddCandidateFormProps {
   isOpen: boolean;
   onClose: () => void;
   initialData?: any;
+  setRoleListRefresh?: (value: boolean) => void
 }
 
-const RoleDialog: React.FC<AddCandidateFormProps> = ({ isOpen, onClose, initialData }) => {
+const RoleDialog: React.FC<AddCandidateFormProps> = ({ isOpen, onClose, initialData, setRoleListRefresh }) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
@@ -23,6 +24,16 @@ const RoleDialog: React.FC<AddCandidateFormProps> = ({ isOpen, onClose, initialD
     name: "", description: "", isActive: false
   });
   const isEdit = Boolean(initialData);
+
+  useEffect(() => {
+    if (initialData) {
+      setForm({
+        name: initialData?.name,
+        description: initialData?.description,
+        isActive: initialData?.isActive
+      });
+    }
+  }, [initialData]);
 
   const resetForm = () => {
     setForm({
@@ -37,10 +48,10 @@ const RoleDialog: React.FC<AddCandidateFormProps> = ({ isOpen, onClose, initialD
     setIsLoading(true);
     try {
       let obj = { ...form, userId: user?._id }
-      const res = await (isEdit ? updateRole(initialData?.id, obj) : addRole(obj));
+      const res = await (isEdit ? updateRole(initialData?._id, obj) : addRole(obj));
       if (res.status === 200 || res.status === 201) {
         toast({ title: `${isEdit ? "Role updated successfully" : "Role added successfully"}`, description: res.data.message })
-
+        setRoleListRefresh(true);
       }
     }
     catch (error) {

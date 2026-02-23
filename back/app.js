@@ -24,6 +24,7 @@ const authMiddleware = require("./middleware/authMiddleware.js");
 
 // job-portal k liye
 const roleRoutes = require("./routes/job-portal-route/roleRoute.js");
+const candidateRoutes = require("./routes/job-portal-route/candidateRoute.js");
 
 const swaggerSpec = require("./swagger");
 const { initSocket } = require("./socketHelpers.js"); // ✅ import only initSocket
@@ -67,6 +68,7 @@ app.use("/api/task", taskRoutes);
 
 // job-portal k liye
 app.use("/api/role", roleRoutes);
+app.use("/api/candidate", candidateRoutes);
 
 // Test route
 app.get("/", (req, res) => {

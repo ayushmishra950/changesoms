@@ -187,8 +187,9 @@ const deleteRole = async (req, res) => {
 // 7️⃣ Toggle Role Status (Activate/Deactivate)
 // =============================
 const toggleRoleStatus = async (req, res) => {
+    const { id, status } = req.body;
     try {
-        const role = await Role.findById(req.params.id);
+        const role = await Role.findById(id);
 
         if (!role) {
             return res.status(404).json({
@@ -197,12 +198,12 @@ const toggleRoleStatus = async (req, res) => {
             });
         }
 
-        role.isActive = !role.isActive;
+        role.isActive = status;
         await role.save();
 
         res.status(200).json({
             success: true,
-            message: `Role ${role.isActive ? "activated" : "deactivated"} successfully`,
+            message: `Role ${status ? "activated" : "deactivated"} successfully`,
             data: role,
         });
 

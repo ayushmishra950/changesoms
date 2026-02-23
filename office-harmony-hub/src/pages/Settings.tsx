@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Settings as SettingsIcon, User, Bell, Lock, Eye, EyeOff, ArrowLeft, Palette, Globe, Mail, Calendar, Save, Phone, Building2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -42,6 +42,7 @@ const Settings: React.FC = () => {
   const [newPasswordShow, setNewPasswordShow] = useState(false);
   const [confirmPasswordShow, setConfirmPasswordShow] = useState(false);
   const [leaves, setLeaves] = useState({ totalLeave: "", specialLeave: "" })
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
     username: "", // Admin
@@ -57,6 +58,7 @@ const Settings: React.FC = () => {
   const dispatch = useAppDispatch();
   const userData = useAppSelector((state) => state.setting.setting);
   const companyDetail = useAppSelector((state) => state.setting?.companyDetail);
+  console.log(companyDetail)
 
   useEffect(() => {
     if (companyDetail !== null) {
@@ -116,7 +118,7 @@ const Settings: React.FC = () => {
     }
   }
   useEffect(() => {
-    if (user?.role !== "super_admin" && (Object.keys(companyDetail).length === 0 || settingRefresh)) {
+    if (user?.role !== "super_admin" && (Object.keys(companyDetail??{})?.length === 0 || settingRefresh)) {
       handleGetCompanyDetail()
     }
   }, [settingRefresh, companyDetail])
@@ -247,12 +249,13 @@ const Settings: React.FC = () => {
 
               {/* Change Avatar */}
               <div className="flex flex-col gap-2">
-                <label htmlFor="profileImageInput">
-                  <Button variant="outline" size="sm">Change Avatar</Button>
-                </label>
+                {/* <label htmlFor="profileImageInput"> */}
+                  <Button type='button' variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>Change Avatar</Button>
+                {/* </label> */}
                 <input
                   type="file"
                   id="profileImageInput"
+                  ref={fileInputRef}
                   accept="image/*"
                   className="hidden"
                   onChange={(e) => {

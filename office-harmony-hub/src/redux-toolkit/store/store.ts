@@ -18,8 +18,12 @@ import taskReducer from "../slice/task/taskSlice";
 import subTaskReducer from "../slice/task/subTaskSlice";
 import taskDashboardReducer from "../slice/task/dashboardSlice";
 
- export const store = configureStore({
-    reducer:{
+// job-portal k liye
+import roleReducer from "../slice/job-portal/roleSlice";
+import candidateReducer from "../slice/job-portal/candidateSlice";
+
+export const store = configureStore({
+    reducer: {
         company: companyReducer,
         user: userReducer,
         setting: settingReducer,
@@ -37,6 +41,10 @@ import taskDashboardReducer from "../slice/task/dashboardSlice";
         task: taskReducer,
         subTask: subTaskReducer,
         taskDashboard: taskDashboardReducer,
+
+        // job-portal k liye
+        role: roleReducer,
+        candidate: candidateReducer
     }
 });
 

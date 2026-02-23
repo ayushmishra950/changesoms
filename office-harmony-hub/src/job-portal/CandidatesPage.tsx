@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +11,10 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { Search, Filter, MoreHorizontal, Mail, Phone, MapPin, Briefcase, FileText, CheckCircle2, XCircle, Clock, Calendar, Download, Users, Linkedin, Github } from "lucide-react";
 import { Helmet } from "react-helmet-async";
 import AddCandidateForm from "@/job-portal/forms/CandidateDialog";
+import { useAppDispatch, useAppSelector } from "@/redux-toolkit/hooks/hook";
+import { getCandidates } from "@/redux-toolkit/slice/job-portal/candidateSlice";
+import { getAllCandidates } from "@/services/Service";
+import { formatDate } from "@/services/allFunctions";
 
 // Mock Data
 const candidatesData = [
@@ -100,22 +104,35 @@ const candidatesData = [
   },
 ];
 
+const statusActions = {
+  screening: ["shortlisted", "rejected"],
+  shortlisted: ["interview", "rejected"],
+  interview: ["selected", "rejected"],
+  selected: [],
+  rejected: []
+};
+
 const CandidatesPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState("All");
-  const [roleFilter, setRoleFilter] = useState("All");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [roleFilter, setRoleFilter] = useState("all");
   const [selectedCandidate, setSelectedCandidate] = useState<any>(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [isCandidateFormOpen, setIsCandidateFormOpen] = useState(false);
-
+  const [initialData, setInitialData] = useState<any>(null);
+  const [candidateListRefresh, setCandidateListRefresh] = useState(false);
+  const dispatch = useAppDispatch();
+  const candidateList = useAppSelector((state) => state.candidate.candidates);
+  const roleList = useAppSelector((state) => state.role.roles);
+  console.log(candidateList)
   // Filter Logic
-  const filteredCandidates = candidatesData.filter((candidate) => {
+  const filteredCandidates = candidateList?.filter((candidate) => {
     const matchesSearch =
       candidate.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       candidate.email.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus =
-      statusFilter === "All" || candidate.status === statusFilter;
-    const matchesRole = roleFilter === "All" || candidate.role === roleFilter;
+      statusFilter === "all" || candidate.status === statusFilter;
+    const matchesRole = roleFilter === "all" || candidate.role?._id === roleFilter;
 
     return matchesSearch && matchesStatus && matchesRole;
   });
@@ -147,11 +164,37 @@ const CandidatesPage: React.FC = () => {
     setIsSheetOpen(true);
   };
 
+  const updateStatus = (e, id, status) => {
+    e.stopPropagation();
+    // API call yaha karo
+    console.log(id, status);
+  };
+
+  const handleGetCandidates = async () => {
+    try {
+      const response = await getAllCandidates();
+      if (response.status === 200) {
+        dispatch(getCandidates(response?.data?.data));
+        setCandidateListRefresh(false);
+      }
+
+    } catch (error) {
+      console.error("Error fetching candidates:", error);
+    }
+  };
+
+  useEffect(() => {
+    if (candidateList.length === 0 || candidateListRefresh) {
+      handleGetCandidates();
+    }
+  }, [candidateListRefresh, candidateList.length]);
+
   return (
     <>
       <AddCandidateForm
         isOpen={isCandidateFormOpen}
         onClose={() => { setIsCandidateFormOpen(false) }}
+        initialData={initialData}
       />
 
       <Helmet>
@@ -161,18 +204,12 @@ const CandidatesPage: React.FC = () => {
       <div className="flex flex-col min-h-screen bg-gray-50/40 p-6 space-y-6">
 
         {/* Page Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight text-gray-900">Candidates</h1>
-            <p className="text-muted-foreground mt-1">
-              Manage and track candidate applications.
-            </p>
-          </div>
+        <div className="flex flex-col sm:flex-row justify-end gap-4 mt-[-35px]">
           <div className="flex items-center gap-2">
             <Button variant="outline" className="gap-2">
               <Download className="h-4 w-4" /> Export
             </Button>
-            <Button onClick={() => { setIsCandidateFormOpen(true) }} className="gap-2 bg-blue-600 hover:bg-blue-700">
+            <Button onClick={() => { setInitialData(null); setIsCandidateFormOpen(true) }} className="gap-2 bg-blue-600 hover:bg-blue-700">
               <Briefcase className="h-4 w-4" /> Add Candidate
             </Button>
           </div>
@@ -183,7 +220,7 @@ const CandidatesPage: React.FC = () => {
           <Card className="items-center p-4 flex justify-between shadow-sm">
             <div>
               <p className="text-sm font-medium text-muted-foreground">Total Candidates</p>
-              <h3 className="text-2xl font-bold mt-1">1,250</h3>
+              <h3 className="text-2xl font-bold mt-1">{candidateList?.length}</h3>
             </div>
             <div className="h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
               <Users className="h-5 w-5 text-blue-600" />
@@ -201,7 +238,7 @@ const CandidatesPage: React.FC = () => {
           <Card className="items-center p-4 flex justify-between shadow-sm">
             <div>
               <p className="text-sm font-medium text-muted-foreground">In Review</p>
-              <h3 className="text-2xl font-bold mt-1">85</h3>
+              <h3 className="text-2xl font-bold mt-1">{candidateList?.filter((candidate) => candidate.candidateStatus === "screening").length}</h3>
             </div>
             <div className="h-10 w-10 bg-amber-100 rounded-full flex items-center justify-center">
               <Clock className="h-5 w-5 text-amber-600" />
@@ -238,9 +275,9 @@ const CandidatesPage: React.FC = () => {
                     <SelectValue placeholder="All Roles" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="All">All Roles</SelectItem>
-                    {uniqueRoles.map((role) => (
-                      <SelectItem key={role} value={role}>{role}</SelectItem>
+                    <SelectItem value="all">All Roles</SelectItem>
+                    {roleList.map((role) => (
+                      <SelectItem key={role?._id} value={role?._id}>{role?.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -250,11 +287,11 @@ const CandidatesPage: React.FC = () => {
                     <SelectValue placeholder="All Status" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="All">All Status</SelectItem>
-                    <SelectItem value="New">New</SelectItem>
-                    <SelectItem value="In Review">In Review</SelectItem>
-                    <SelectItem value="Shortlisted">Shortlisted</SelectItem>
-                    <SelectItem value="Interview">Interview</SelectItem>
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="new">New</SelectItem>
+                    <SelectItem value="in_review">In Review</SelectItem>
+                    <SelectItem value="shortlisted">Shortlisted</SelectItem>
+                    <SelectItem value="interview">Interview</SelectItem>
                     <SelectItem value="Hired">Hired</SelectItem>
                     <SelectItem value="Rejected">Rejected</SelectItem>
                   </SelectContent>
@@ -283,22 +320,22 @@ const CandidatesPage: React.FC = () => {
               <TableBody>
                 {filteredCandidates.length > 0 ? (
                   filteredCandidates.map((candidate) => (
-                    <TableRow key={candidate.id} className="cursor-pointer hover:bg-muted/50" onClick={() => openCandidateDetails(candidate)}>
+                    <TableRow key={candidate._id} className="cursor-pointer hover:bg-muted/50" onClick={() => openCandidateDetails(candidate)}>
                       <TableCell>
                         <div className="flex items-center gap-3">
                           <Avatar>
-                            <AvatarImage src={candidate.avatar} alt={candidate.name} />
-                            <AvatarFallback>{candidate.name.substring(0, 2).toUpperCase()}</AvatarFallback>
+                            <AvatarImage src={candidate?.avatar} alt={candidate?.name} />
+                            <AvatarFallback>{candidate?.name?.substring(0, 2).toUpperCase()}</AvatarFallback>
                           </Avatar>
                           <div>
-                            <div className="font-medium">{candidate.name}</div>
-                            <div className="text-xs text-muted-foreground">{candidate.email}</div>
+                            <div className="font-medium">{candidate?.name}</div>
+                            <div className="text-xs text-muted-foreground">{candidate?.email}</div>
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell>{candidate.role}</TableCell>
-                      <TableCell>{candidate.appliedDate}</TableCell>
-                      <TableCell>{getStatusBadge(candidate.status)}</TableCell>
+                      <TableCell>{candidate?.role?.name}</TableCell>
+                      <TableCell>{formatDate(candidate?.createdAt)}</TableCell>
+                      <TableCell>{getStatusBadge(candidate?.candidateStatus)}</TableCell>
                       <TableCell className="text-right">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
@@ -307,12 +344,38 @@ const CandidatesPage: React.FC = () => {
                               <MoreHorizontal className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); openCandidateDetails(candidate) }}>View Profile</DropdownMenuItem>
-                            <DropdownMenuItem onClick={(e) => e.stopPropagation()}>Schedule Interview</DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem className="text-red-600" onClick={(e) => e.stopPropagation()}>Reject</DropdownMenuItem>
+
+                          <DropdownMenuContent align="end" >
+                            <DropdownMenuItem className="cursor-pointer" onClick={(e) => { e.stopPropagation(); setInitialData(candidate); setIsCandidateFormOpen(true) }}>
+                              Edit
+                            </DropdownMenuItem>
+
+                            {/* View Profile - Always visible */}
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openCandidateDetails(candidate);
+                              }}
+                              className="cursor-pointer"
+                            >
+                              View Profile
+                            </DropdownMenuItem>
+
+                            {/* Dynamic Status Buttons */}
+                            {statusActions[candidate.candidateStatus]?.map((action) => (
+                              <DropdownMenuItem
+                                key={action}
+                                onClick={(e) =>
+                                  updateStatus(e, candidate._id, action)
+                                }
+                                className={action === "rejected" ? "text-red-600 cursor-pointer" : "cursor-pointer"}
+                              >
+                                {action === "shortlisted" && "Shortlist"}
+                                {action === "interview" && "Schedule Interview"}
+                                {action === "selected" && "Select"}
+                                {action === "rejected" && "Reject"}
+                              </DropdownMenuItem>
+                            ))}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>

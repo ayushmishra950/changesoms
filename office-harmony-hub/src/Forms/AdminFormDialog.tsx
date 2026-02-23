@@ -25,6 +25,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { EyeOff, Eye, Loader2 } from "lucide-react";
 import CompanyFormDialog from "@/Forms/CompanyFormDialog";
 import { useQuery } from "@tanstack/react-query";
+import { useAppDispatch, useAppSelector } from "@/redux-toolkit/hooks/hook";
+import { getCompany } from "@/redux-toolkit/slice/allPage/companySlice";
 
 
 interface AdminFormDialogProps {
@@ -59,6 +61,8 @@ const AdminFormDialog: React.FC<AdminFormDialogProps> = ({
   const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [refreshCompanyList, setRefreshCompanyList] = useState(false);
+  const dispatch = useAppDispatch();
+  const companyList = useAppSelector((state)=> state?.company?.company)
 
   const resetFrom = () => {
     setForm({
@@ -72,45 +76,24 @@ const AdminFormDialog: React.FC<AdminFormDialogProps> = ({
     })
   };
 
-  const { data, isLoading, refetch, error, isError } = useQuery({
-    queryKey: ['companies', user?._id],
-    queryFn: () => getCompanys(user?._id),
-    enabled: !!user?._id && user?.role === "super_admin",
-  });
-  const companyList = data?.status === 200 && Array.isArray(data?.data)
-    ? data.data
-    : [];
+  // // Fetch companies
+  const fetchCompanies = async () => {
+    try {
+      const res = await getCompanys(user?._id);
+      if (res.status === 200) {
+        dispatch(getCompany(res.data))
+      }
+    } catch (err) {
+      console.log(err);
+    }
+  };
 
   useEffect(() => {
-    if (isError && error) {
-      const err = error as any;
-      toast({
-        title: "Error",
-        description: err?.response?.data?.message || "Failed to fetch companies",
-        variant: "destructive"
-      });
+    if (user?.role === "super_admin" && (companyList.length === 0 || refreshCompanyList)) {
+      fetchCompanies();
     }
-  }, [isError, error]);
 
-
-  // // Fetch companies
-  // const fetchCompanies = async () => {
-  //   try {
-  //     const res = await getCompanys(user?._id);
-  //     if (res.status === 200) {
-  //       setCompanyList(Array.isArray(res.data) ? res.data : []);
-  //     }
-  //   } catch (err) {
-  //     console.log(err);
-  //   }
-  // };
-
-  // useEffect(() => {
-  //   if (user?.role === "super_admin") {
-  //     fetchCompanies();
-  //   }
-
-  // }, [refreshCompanyList]);
+  }, [refreshCompanyList, companyList.length]);
   // Edit mode data
   useEffect(() => {
     if (initialData && mode === true) {
@@ -166,7 +149,6 @@ const AdminFormDialog: React.FC<AdminFormDialogProps> = ({
     }
   };
 
-  if (isLoading) return <p>Loading...</p>;
 
   return (
     <>

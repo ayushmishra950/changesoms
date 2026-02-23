@@ -64,8 +64,6 @@ export const EmployeeFormDialog: React.FC<EmployeeFormDialogProps> = ({
     setShowArrow(!isBottom);
   };
 
-  const today = new Date().toISOString().split("T")[0];
-
 
   // Fetch departments
   const handleGetDepartment = async () => {
@@ -684,6 +682,24 @@ export const EmployeeFormDialog: React.FC<EmployeeFormDialogProps> = ({
                         preview={bankPreview}
                         setPreview={setBankPreview}
                         onChange={(e) => handleFileChange(e, "BankPassbook", setBankPreview)}
+                        allowText={true}
+                        textValue={
+                          typeof currentEmployee?.documents?.BankPassbook?.url === "string"
+                            ? currentEmployee?.documents?.BankPassbook?.url
+                            : ""
+                        }
+                        onTextChange={(val) => {
+                          setCurrentEmployee((prev: any) => ({
+                            ...prev,
+                            documents: {
+                              ...prev?.documents,
+                              BankPassbook: {
+                                ...prev?.documents?.BankPassbook,
+                                url: val
+                              }
+                            }
+                          }));
+                        }}
                       />
                     </div>
                   </div>

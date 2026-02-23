@@ -7,6 +7,6 @@ router.get("/get-active", getActiveRoles);
 router.get("/get-single/:id", getSingleRole);
 router.put("/update/:id", updateRole);
 router.delete("/delete/:id", deleteRole);
-router.patch("/toggle/:id", toggleRoleStatus);
+router.patch("/toggle/status", toggleRoleStatus);
 
 module.exports = router;

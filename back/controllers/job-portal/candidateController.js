@@ -1,4 +1,4 @@
-const Candidate = require("../../models/job-portal/candidateModel");
+const Candidate = require("../../models/job-portal/candidate");
 
 // =============================
 // 1️⃣ Add Candidate
@@ -34,7 +34,7 @@ const addCandidate = async (req, res) => {
 // =============================
 const getAllCandidates = async (req, res) => {
     try {
-        const candidates = await Candidate.find().sort({ createdAt: -1 });
+        const candidates = await Candidate.find().populate("role", "name").sort({ createdAt: -1 });
 
         res.status(200).json({
             success: true,
@@ -83,10 +83,11 @@ const getSingleCandidate = async (req, res) => {
 // 4️⃣ Update Candidate
 // =============================
 const updateCandidate = async (req, res) => {
+    const { id, ...obj } = req.body;
     try {
         const candidate = await Candidate.findByIdAndUpdate(
-            req.params.id,
-            req.body,
+            id,
+            obj,
             { new: true, runValidators: true }
         );
 

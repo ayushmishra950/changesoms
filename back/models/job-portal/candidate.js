@@ -64,6 +64,11 @@ const candidateSchema = new mongoose.Schema(
             required: true,
             min: 0,
         },
+        role: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Role",
+            required: true
+        },
 
         expectedSalary: {
             type: Number, // in LPA
@@ -94,7 +99,6 @@ const candidateSchema = new mongoose.Schema(
 
         resume: {
             type: String, // store file URL or file path
-            required: true,
         },
 
         highestQualification: {
@@ -114,7 +118,7 @@ const candidateSchema = new mongoose.Schema(
 
         candidateStatus: {
             type: String,
-            enum: ["screening", "interview", "selected", "rejected"],
+            enum: ["screening", "shortlisted", "interview", "selected", "rejected"],
             default: "screening",
         },
         //         screening // shortlisted // interview_scheduled// interview_completed// selected// rejected// on_hold// offer_released// offer_accepted// offer_declined

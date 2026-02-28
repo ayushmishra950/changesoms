@@ -12,7 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { getleaveRequests, getSingleleaveRequests, getleaveDashboard, getleaveTypes, leaveDelete, leaveStatusChange } from "@/services/Service";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useNotifications } from '@/contexts/NotificationContext';
-import { formatDate, getDaysBetween } from "@/services/allFunctions";
+import { formatDate, getDaysBetween, allDaysCount } from "@/services/allFunctions";
 import { Helmet } from "react-helmet-async";
 import { getLeaveTypes, getLeaveRequests } from "@/redux-toolkit/slice/allPage/leaveSlice";
 import { useAppDispatch, useAppSelector } from '@/redux-toolkit/hooks/hook';
@@ -38,6 +38,7 @@ const Leave: React.FC = () => {
   const leaveTypes = useAppSelector((state) => state.leave.leaveTypes);
   const allLeaveRequests = useAppSelector((state) => state.leave.leaveRequests);
   const [pageLoading, setPageLoading] = useState(false);
+  const [allDays, setAllDays] = useState(allDaysCount());
 
   const handleGetUserDashboard = async () => {
     let obj = { companyId: user?.createdBy?._id, userId: user?._id }
@@ -52,11 +53,12 @@ const Leave: React.FC = () => {
       console.log(err);
     }
   }
+
   useEffect(() => {
-    if (user?.role === "employee" || allLeaveRequestRefresh) {
+    if (user?.role === "employee" || allLeaveRequestRefresh || allLeaveRequests.length === 0) {
       handleGetUserDashboard();
     }
-  }, [allLeaveRequestRefresh])
+  }, [allLeaveRequestRefresh, user?.role, allLeaveRequests.length])
 
   const handleGetleaveTypes = async () => {
     try {
@@ -92,6 +94,7 @@ const Leave: React.FC = () => {
         // setAllLeaveRequests(response?.data?.requests);
         dispatch(getLeaveRequests(response?.data?.requests));
         setAllLeaveRequestRefresh(false);
+        handleGetUserDashboard();
 
       }
     } catch (error) {
@@ -102,14 +105,6 @@ const Leave: React.FC = () => {
       setPageLoading(false);
     }
   };
-
-  // useEffect(() => {
-  //   handleGetleaveRequests();
-  //   if (user?._id &&(leaveTypeRefresh || leaveTypes.length === 0)) {
-  //     handleGetleaveTypes();
-  //   }
-  // }, [leaveTypeRefresh, notifications]);
-
 
   const lastNotificationCount = useRef(notifications?.length || 0);
 
@@ -166,6 +161,7 @@ const Leave: React.FC = () => {
       console.log("Status Change Response:", response);
       if (response.status === 200) {
         setAllLeaveRequestRefresh(true);
+        handleGetUserDashboard();
         toast({
           title: "Leave Request Updated",
           description: `Leave request has been ${newStatus.toLowerCase()} successfully.`,
@@ -312,7 +308,7 @@ const Leave: React.FC = () => {
               <CardContent className="p-4 flex flex-col justify-center text-center min-h-[100px]">
 
                 {/* Conditional Sticker */}
-                {leaveDashboard?.companySpecialLeave === 0 && (
+                {leaveDashboard?.usedLeave > 0 && (
                   <span className="absolute top-2 right-2 bg-red-100 text-red-700 text-xs px-2 py-0.5 rounded-full">
                     Used
                   </span>
@@ -320,7 +316,7 @@ const Leave: React.FC = () => {
 
                 <p className="text-sm text-muted-foreground">Company Paid Leave</p>
                 <p className="text-2xl font-bold text-green-600 mt-2">
-                  {leaveDashboard?.companySpecialLeave}
+                  1
                 </p>
               </CardContent>
             </Card>
@@ -340,7 +336,7 @@ const Leave: React.FC = () => {
                   {/* Free Leave Total */}
                   <div className="flex-1 text-center">
                     <p className="text-2xl font-bold text-blue-600">
-                      {leaveDashboard?.freeLeave?.total}
+                      {allDays?.total}
                     </p>
                     <p className="text-[10px] text-muted-foreground mt-1 uppercase tracking-wider">Free Leave</p>
                   </div>
@@ -352,12 +348,9 @@ const Leave: React.FC = () => {
                     <div className="flex justify-between items-center text-sm">
                       <div className="flex items-center gap-1">
                         <span className="font-medium">Sat</span>
-                        <span className="bg-gray-200 text-gray-700 text-xs px-1 py-0.5 rounded-full">
-                          Used
-                        </span>
                       </div>
                       <span className="font-bold text-purple-600">
-                        {leaveDashboard?.freeLeave?.weekends.saturday}
+                        {allDays?.totalSpecialSaturdays}
                       </span>
                     </div>
 
@@ -365,12 +358,9 @@ const Leave: React.FC = () => {
                     <div className="flex justify-between items-center text-sm">
                       <div className="flex items-center gap-1">
                         <span className="font-medium">Sun</span>
-                        <span className="bg-gray-200 text-gray-700 text-xs px-1 py-0.5 rounded-full">
-                          Used
-                        </span>
                       </div>
                       <span className="font-bold text-purple-600">
-                        {leaveDashboard?.freeLeave?.weekends.sunday}
+                        {allDays?.totalSunday}
                       </span>
                     </div>
 

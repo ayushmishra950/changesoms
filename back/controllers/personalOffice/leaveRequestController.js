@@ -162,124 +162,62 @@ const getEmployeeLeaveSummary = async (req, res) => {
   try {
     const { companyId, userId } = req.query;
 
-    if (!companyId || !userId) {
-      return res.status(400).json({ message: "companyId and userId are required" });
+    // ✅ Validate IDs
+    if (!mongoose.Types.ObjectId.isValid(companyId) || !mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ message: "Invalid IDs" });
     }
 
+    // ✅ Fetch Company
     const company = await Company.findById(companyId);
+    if (!company) return res.status(404).json({ message: "Company not found" });
+
+    // ✅ Fetch Employee
     const employee = await Employee.findById(userId);
+    if (!employee) return res.status(404).json({ message: "Employee not found" });
 
-    if (!company || !employee) {
-      return res.status(404).json({ message: "Company or Employee not found" });
-    }
-
+    // 📅 Current Month Range
     const now = new Date();
-    now.setHours(0, 0, 0, 0);
-
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    startOfMonth.setHours(0, 0, 0, 0);
     const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-    endOfMonth.setHours(23, 59, 59, 999);
 
-    // Calculate total month weekends (1,3 Sat + all Sun) & past weekends
-    let totalWeekendCount = { saturday: 0, sunday: 0 };
-    let pastWeekendCount = { saturday: 0, sunday: 0 };
-
-    for (let d = new Date(startOfMonth); d <= endOfMonth; d.setDate(d.getDate() + 1)) {
-      const day = d.getDay();
-      const date = d.getDate();
-
-      // Sunday
-      if (day === 0) {
-        totalWeekendCount.sunday += 1;
-        if (d <= now) pastWeekendCount.sunday += 1;
-      }
-
-      // 1st & 3rd Saturday
-      if (day === 6) {
-        const weekNum = Math.ceil(date / 7);
-        if (weekNum === 1 || weekNum === 3) {
-          totalWeekendCount.saturday += 1;
-          if (d <= now) pastWeekendCount.saturday += 1;
-        }
-      }
-    }
-
-    // Fetch leave requests for current month
-    const leaveRequests = await LeaveRequest.find({
+    // 📌 Fetch leaves overlapping current month
+    const leaves = await LeaveRequest.find({
       user: userId,
-      fromDate: { $lte: endOfMonth },
-      toDate: { $gte: startOfMonth }
+      $or: [
+        { fromDate: { $gte: startOfMonth, $lte: endOfMonth } },
+        { toDate: { $gte: startOfMonth, $lte: endOfMonth } },
+        { fromDate: { $lte: startOfMonth }, toDate: { $gte: endOfMonth } }
+      ]
     });
 
-    let normalApprovedLeaves = 0; // only normal leaves (weekends excluded)
-    let totalUsedLeave = 0; // normal + past weekends
-    let pendingLeave = 0;
+    // ⏳ Pending leaves
+    const pendingLeave = leaves.filter(l => l.status.toLowerCase() === "pending").length;
 
-    leaveRequests.forEach((lv) => {
-      if (!lv.fromDate || !lv.toDate) return;
+    // ✅ Approved leave days (current month)
+    let approvedLeaveDays = 0;
+    leaves
+      .filter(l => l.status.toLowerCase() === "approved")
+      .forEach(l => {
+        const from = new Date(l.fromDate) < startOfMonth ? startOfMonth : new Date(l.fromDate);
+        const to = new Date(l.toDate) > endOfMonth ? endOfMonth : new Date(l.toDate);
 
-      const start = new Date(lv.fromDate < startOfMonth ? startOfMonth : lv.fromDate);
-      const end = new Date(lv.toDate > endOfMonth ? endOfMonth : lv.toDate);
+        const diffDays = l.totalDays || Math.floor((to - from) / (1000 * 60 * 60 * 24)) + 1;
+        approvedLeaveDays += diffDays;
+      });
 
-      let current = new Date(start);
+    // 🧮 Final Calculations
+    const usedLeave = approvedLeaveDays;
+    const personalLeave = Math.max(0, approvedLeaveDays - company.specialLeave); // ✅ subtract company special leave
 
-      while (current <= end) {
-        const day = current.getDay();
-        const date = current.getDate();
-
-        let isWeekend = false;
-        if (day === 0) isWeekend = true;
-        if (day === 6) {
-          const weekNum = Math.ceil(date / 7);
-          if (weekNum === 1 || weekNum === 3) isWeekend = true;
-        }
-
-        // Normal approved leave
-        if (!isWeekend && lv.status === "Approved") normalApprovedLeaves += 1;
-
-        // Total used leave includes past weekends
-        if (lv.status === "Approved") {
-          if (isWeekend && current <= now) totalUsedLeave += 1; // past weekends
-          else if (!isWeekend) totalUsedLeave += 1;
-        }
-
-        // Pending leaves (exclude weekends)
-        if (!isWeekend && lv.status === "Pending") pendingLeave += 1;
-
-        current.setDate(current.getDate() + 1);
-      }
-    });
-
-    // Section 1: Company Special Leave
-    let companySpecialLeave = employee.specialLeaveBalance || 0;
-    if (companySpecialLeave <= 0) {
-      companySpecialLeave = 0;
-      await Employee.findByIdAndUpdate(userId, { specialLeaveBalance: 0 });
-    }
-
-    // Section 2: Free Leave → month total weekends, past weekends for sticker
-    const totalFreeLeave = totalWeekendCount.saturday + totalWeekendCount.sunday;
-
-    // Section 5: Personal Leave = normalApprovedLeaves - companySpecialLeave
-    let personalLeave = normalApprovedLeaves - companySpecialLeave;
-    if (personalLeave < 0) personalLeave = 0;
-
-    // Return frontend-ready object
     return res.status(200).json({
-      companySpecialLeave, // Section 1
-      freeLeave: {
-        total: totalFreeLeave,
-        weekends: pastWeekendCount
-      },
-      usedLeave: totalUsedLeave, // Section 3
-      pendingLeave, // Section 4
-      personalLeave // Section 5
+      success: true,
+      pendingLeave,
+      usedLeave,
+      personalLeave
     });
 
   } catch (error) {
-    console.error("Leave Summary Error:", error);
-    return res.status(500).json({ message: "Server error" });
+    return res.status(500).json({ message: error.message });
   }
 };
 /**

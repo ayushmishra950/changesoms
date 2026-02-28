@@ -1,5 +1,5 @@
 
-import { LayoutDashboard, Users, Building2,IndianRupee, FolderKanban, Clock, CalendarDays, Receipt, Wallet, Bell, BarChart3, Settings, LogOut, Briefcase } from 'lucide-react';
+import { LayoutDashboard, Users, Building2, User, IndianRupee, FolderKanban, Clock, CalendarDays, Receipt, Wallet, Bell, BarChart3, Settings, LogOut, Briefcase } from 'lucide-react';
 
 //   date ko frontend m normal show karne k liye
 export function formatDate(isoDate, format = 'short', locale = 'en-US') {
@@ -80,6 +80,32 @@ export const getCurrentWeek = (): string => {
   return `${year}-W${weekStr}`;
 };
 
+export const allDaysCount = () => {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = today.getMonth();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+  let totalSunday = 0;
+  let totalSpecialSaturdays = 0; // 1st & 3rd Saturday
+  let saturdayCount = 0;
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    const date = new Date(year, month, day);
+    const dayOfWeek = date.getDay();
+
+    if (dayOfWeek === 0) {
+      totalSunday++;
+    } else if (dayOfWeek === 6) {
+      saturdayCount++;
+      if (saturdayCount === 1 || saturdayCount === 3) {
+        totalSpecialSaturdays++;
+      }
+    }
+  }
+
+  return { totalSunday, totalSpecialSaturdays, total: totalSunday + totalSpecialSaturdays };
+};
 
 
 export const getStatusColor = (status: string) => {
@@ -125,6 +151,37 @@ export const getEventColor = (eventType: string) => {
     default: return 'bg-gray-100 text-gray-800';
   }
 };
+
+
+export const getStatusBadgeClassAndText = (status: string) => {
+  switch (status) {
+    case "selected":
+      return { className: "bg-green-200 text-green-800", text: "Hired" };
+    case "rejected":
+      return { className: "bg-red-200 text-red-800", text: "Rejected" };
+    case "interview":
+      return { className: "bg-purple-200 text-purple-800", text: "Interview" };
+    case "shortlisted":
+      return { className: "bg-blue-200 text-blue-800", text: "Shortlisted" };
+    case "screening":
+      return { className: "bg-yellow-100 text-yellow-800", text: "In Review" };
+    case "applied":
+      return { className: "bg-amber-200 text-amber-900", text: "Applied" };
+    default:
+      return { className: "bg-gray-200 text-gray-800", text: status };
+  }
+};
+
+
+export const statusActions = {
+  applied: ["screening", "rejected"],
+  screening: ["shortlisted", "rejected"],
+  shortlisted: ["interview", "rejected"],
+  interview: ["selected", "rejected"],
+  selected: [],
+  rejected: []
+};
+
 
 // utils/tasks.ts
 export const getOverdueTasks = (projects: any[], role: string) => {
@@ -207,6 +264,8 @@ export interface SidebarProps {
   setTaskName: React.Dispatch<React.SetStateAction<string>>;
   setJobSubPage: React.Dispatch<React.SetStateAction<string>>;
   setJobName: React.Dispatch<React.SetStateAction<string>>;
+  setLeadSubPage: React.Dispatch<React.SetStateAction<string>>;
+  setLeadName: React.Dispatch<React.SetStateAction<string>>;
 
 }
 export interface NavItem {
@@ -227,6 +286,7 @@ export const navItems: NavItem[] = [
   { icon: IndianRupee, label: 'Expenses', path: '/expenses', roles: ['admin'] },
   { icon: Wallet, label: 'Payroll', path: '/payrolls', roles: ['admin', 'employee'] },
   { icon: Bell, label: 'Job-Portal', path: '/jobs', roles: ['super_admin', 'admin'] },
+  { icon: User, label: 'Lead-Portal', path: '/leads', roles: ['super_admin', 'admin'] },
   { icon: BarChart3, label: 'Reports', path: '/reports', roles: ['admin'] },
   { icon: Settings, label: 'Setting', path: '/setting', roles: ['super_admin', 'admin', 'employee'] },
 ];
@@ -244,13 +304,20 @@ export const taskSubMenu = [
 
 export const JobSubMenu = [
   { label: 'Dashboard', path: '/jobs', roles: ["admin", "manager", "employee"] },
-  { label: 'Candidates', path: '/jobs/candidates', roles: ["admin"] },
-  { label: 'Applications', path: '/jobs/application', roles: ["admin"] },
   { label: 'Companys', path: '/jobs/companys', roles: ["admin", "manager", "employee"] },
   { label: 'Jobs', path: '/jobs/jobs', roles: ["admin", "manager"] },
+  { label: 'Applications', path: '/jobs/application', roles: ["admin"] },
+  { label: 'Candidates', path: '/jobs/candidates', roles: ["admin"] },
   { label: 'Revenue', path: '/jobs/revenues', roles: ["admin", "manager", "employee"] },
   { label: "Setting", path: "/jobs/setting", roles: ["admin"] },
   { label: "Roles", path: "/jobs/roles", roles: ["admin"] }
+];
+
+
+export const LeadSubMenu = [
+  { label: 'LeadList', path: '/leads', roles: ["admin", "manager", "employee"] },
+  { label: 'OrderList', path: '/leads/orders', roles: ["admin", "manager", "employee"] },
+  { label: 'ProductList', path: '/leads/products', roles: ["admin", "manager"] },
 ];
 
 
@@ -264,6 +331,9 @@ export const getStatusStyle = (status: string) => {
     case "Half Day": return { bg: "bg-yellow-100 text-yellow-800", text: "Half Day" };
     case "Late": return { bg: "bg-orange-100 text-orange-800", text: "Late" };
     case "No Data": return { bg: "bg-blue-50 text-blue-400", text: "-" };
+    case "Sunday": return { bg: "bg-red-100 text-red-800", text: "Sunday" };
+    case "1st Saturday": return { bg: "bg-red-100 text-red-800", text: "1st Saturday" };
+    case "3rd Saturday": return { bg: "bg-red-100 text-red-800", text: "3rd Saturday" };
     default: return { bg: "bg-gray-100 text-gray-500", text: "-" };
   }
 };
@@ -446,7 +516,7 @@ export const headingManage = (path: string, role: string) => {
       return {
         title: "Applications",
         description:
-          "Track job applications, review statuses, and monitor applicant progress efficiently.",
+          "Track and manage job applications across all stages.",
         icon: "FileCheck",
       };
     }
@@ -454,7 +524,7 @@ export const headingManage = (path: string, role: string) => {
       return {
         title: "Companies",
         description:
-          "Manage partnered companies, client profiles, and organizational details.",
+          "Manage registered companies and their job postings.",
         icon: "Building2",
       };
     }
@@ -462,7 +532,7 @@ export const headingManage = (path: string, role: string) => {
       return {
         title: "Jobs",
         description:
-          "Create, update, and monitor job postings along with their hiring status.",
+          "Create and manage job posts, track candidates, and view metrics.",
         icon: "Briefcase",
       };
     }

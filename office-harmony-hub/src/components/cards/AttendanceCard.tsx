@@ -284,13 +284,16 @@ const AttendanceTable: React.FC<Props> = ({ attendanceRefresh, setAttendanceRefr
                       const day = i + 1;
                       const isToday = isCurrentMonth && day === todayDate;
                       const data = emp.attendanceByDate[day] || { status: "No Data", clockIn: "-", clockOut: "-", hours: 0 };
-                      const { bg, text } = getStatusStyle(data.status);
+                      const displayValue = data.message || data.status; // ✅ message > status
+                      const { bg, text } = getStatusStyle(displayValue);
 
                       return (
                         <td key={`${emp._id}-${day}`} className={cn("text-center px-3 py-4 border-b text-xs min-w-[100px]", bg, isToday && "ring-2 ring-primary ring-inset")}>
                           <div className="font-semibold mb-1">{text}</div>
-                          <div className="text-[10px] opacity-80">{data.clockIn} - {data.clockOut}</div>
-                          <div className="text-[10px] font-medium">{data.hours > 0 ? `${data.hours.toFixed(1)}h` : "-"}</div>
+                          {!data?.message && <>
+                            <div className="text-[10px] opacity-80">{data.clockIn} - {data.clockOut}</div>
+                            <div className="text-[10px] font-medium">{data.hours > 0 ? `${data.hours.toFixed(1)}h` : "-"}</div>
+                          </>}
                         </td>
                       );
                     })}

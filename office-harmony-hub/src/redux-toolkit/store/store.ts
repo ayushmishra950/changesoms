@@ -21,6 +21,10 @@ import taskDashboardReducer from "../slice/task/dashboardSlice";
 // job-portal k liye
 import roleReducer from "../slice/job-portal/roleSlice";
 import candidateReducer from "../slice/job-portal/candidateSlice";
+import companyJobReducer from "../slice/job-portal/companyJobSlice";
+import jobReducer from "../slice/job-portal/jobSlice";
+import applicationReducer from "../slice/job-portal/applicationSlice";
+import dashboardJobReducer from "../slice/job-portal/dashboardSlice";
 
 export const store = configureStore({
     reducer: {
@@ -44,7 +48,11 @@ export const store = configureStore({
 
         // job-portal k liye
         role: roleReducer,
-        candidate: candidateReducer
+        candidate: candidateReducer,
+        companyJob: companyJobReducer,
+        job: jobReducer, 
+        application: applicationReducer, 
+        dashboardJob: dashboardJobReducer
     }
 });
 

@@ -415,12 +415,152 @@ const clockOut = async (req, res) => {
   }
 };
 
+
+
+
+// ------------------- CRON JOB: Auto Mark Absent -------------------
+// cron.schedule("0 18 * * *", async () => {
+//   try {
+//     const today = new Date();
+//     const startOfDay = new Date(today.toISOString().split("T")[0] + "T00:00:00.000Z");
+//     const endOfDay = new Date(today.toISOString().split("T")[0] + "T23:59:59.999Z");
+
+//     const companies = await Company.find({});
+
+//     for (const company of companies) {
+//       const employees = await Employee.find({ createdBy: company._id });
+//       const rules = company.attendanceRules || {};
+//       const expectedClockIn = rules.clockInTime || "09:00";
+//       const fullDayHours = rules.fullDayHours || 8;
+//       const halfDayHours = rules.halfDayHours || 4;
+
+//       for (const emp of employees) {
+//         let attendance = await Attendance.findOne({
+//           userId: emp._id,
+//           date: { $gte: startOfDay, $lte: endOfDay },
+//           createdBy: company._id,
+//         });
+
+//         if (!attendance) {
+//           // No attendance → Absent
+//           attendance = new Attendance({
+//             userId: emp._id,
+//             date: today,
+//             clockIn: null,
+//             clockOut: null,
+//             hoursWorked: 0,
+//             status: "Absent",
+//             createdBy: company._id,
+//           });
+//         } else if (attendance.clockIn && !attendance.clockOut) {
+//           // Clocked in but not out → calculate hours till now (6 PM)
+//           const [inH, inM] = attendance.clockIn.split(":").map(Number);
+//           const clockOutTime = "18:00";
+//           const [outH, outM] = clockOutTime.split(":").map(Number);
+//           const hoursWorked = ((outH + outM / 60) - (inH + inM / 60)).toFixed(2);
+
+//           // Determine status
+//           let status = "Present";
+//           if (hoursWorked < halfDayHours) status = "Half Day";
+//           else if (hoursWorked >= halfDayHours && hoursWorked < fullDayHours) status = "Late";
+
+//           // Check late based on clockIn
+//           const [expH, expM] = expectedClockIn.split(":").map(Number);
+//           const expected = new Date(attendance.date);
+//           expected.setHours(expH, expM, 0, 0);
+//           const actual = new Date(attendance.date);
+//           actual.setHours(inH, inM, 0, 0);
+//           if (actual > expected) status = "Late";
+
+//           attendance.clockOut = clockOutTime;
+//           attendance.hoursWorked = hoursWorked;
+//           attendance.status = status;
+//         }
+
+//         await attendance.save();
+//       }
+//     }
+
+//     console.log("✅ Daily attendance auto-update completed.");
+//   } catch (err) {
+//     console.error(err);
+//   }
+// });
+
+
+
+
 // ------------------- CRON JOB: Auto Mark Absent -------------------
 cron.schedule("0 18 * * *", async () => {
   try {
     const today = new Date();
-    const startOfDay = new Date(today.toISOString().split("T")[0] + "T00:00:00.000Z");
-    const endOfDay = new Date(today.toISOString().split("T")[0] + "T23:59:59.999Z");
+    const year = today.getFullYear();
+    const month = today.getMonth();
+    const day = today.getDate();
+
+    // ----------------- Check if today is Sunday or 1st/3rd Saturday -----------------
+    const dayOfWeek = today.getDay(); // 0 = Sunday, 6 = Saturday
+
+    let isWeeklyOff = false;
+    let message = "";
+
+    if (dayOfWeek === 0) {
+      isWeeklyOff = true;
+      message = "Sunday";
+    } else if (dayOfWeek === 6) {
+      // Check 1st or 3rd Saturday
+      const firstSaturday = 6 - new Date(year, month, 1).getDay() + 1;
+      const thirdSaturday = firstSaturday + 14;
+      if (day === firstSaturday) {
+        isWeeklyOff = true;
+        message = "1st Saturday";
+      } else if (day === thirdSaturday) {
+        isWeeklyOff = true;
+        message = "3rd Saturday";
+      }
+    }
+
+    if (isWeeklyOff) {
+      console.log(`📌 Today (${today.toDateString()}) is weekly off: ${message}. Attendance not marked.`);
+
+      // ✅ Save attendance with message for all employees
+      const companies = await Company.find({});
+      for (const company of companies) {
+        const employees = await Employee.find({ createdBy: company._id });
+
+        for (const emp of employees) {
+          let attendance = await Attendance.findOne({
+            userId: emp._id,
+            date: { $gte: new Date(today.setHours(0, 0, 0, 0)), $lte: new Date(today.setHours(23, 59, 59, 999)) },
+            createdBy: company._id,
+          });
+
+          if (!attendance) {
+            attendance = new Attendance({
+              userId: emp._id,
+              date: today,
+              status: "Leave", // Default
+              clockIn: "-",
+              clockOut: "-",
+              hoursWorked: 0,
+              message,
+              createdBy: company._id,
+            });
+          } else {
+            attendance.message = message; // update message if attendance exists
+          }
+
+          await attendance.save();
+        }
+      }
+      return;
+    }
+
+    // ----------------- Normal Attendance Processing -----------------
+    const startOfDay = new Date(today);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(today);
+    endOfDay.setHours(23, 59, 59, 999);
 
     const companies = await Company.find({});
 
@@ -439,7 +579,7 @@ cron.schedule("0 18 * * *", async () => {
         });
 
         if (!attendance) {
-          // No attendance → Absent
+          // No attendance → mark Absent
           attendance = new Attendance({
             userId: emp._id,
             date: today,
@@ -447,21 +587,31 @@ cron.schedule("0 18 * * *", async () => {
             clockOut: null,
             hoursWorked: 0,
             status: "Absent",
+            message: "",
             createdBy: company._id,
           });
         } else if (attendance.clockIn && !attendance.clockOut) {
-          // Clocked in but not out → calculate hours till now (6 PM)
-          const [inH, inM] = attendance.clockIn.split(":").map(Number);
+          // Clocked in but not out → calculate hours till 6 PM
+          let inH = 0,
+            inM = 0;
+          try {
+            [inH, inM] = attendance.clockIn.split(":").map(Number);
+          } catch {
+            inH = 0;
+            inM = 0;
+          }
+
           const clockOutTime = "18:00";
           const [outH, outM] = clockOutTime.split(":").map(Number);
-          const hoursWorked = ((outH + outM / 60) - (inH + inM / 60)).toFixed(2);
+          const hoursWorked = parseFloat(((outH + outM / 60) - (inH + inM / 60)).toFixed(2));
 
-          // Determine status
-          let status = "Present";
-          if (hoursWorked < halfDayHours) status = "Half Day";
-          else if (hoursWorked >= halfDayHours && hoursWorked < fullDayHours) status = "Late";
+          // Status determination
+          let status;
+          if (hoursWorked >= fullDayHours) status = "Present";
+          else if (hoursWorked >= halfDayHours) status = "Late";
+          else status = "Half Day";
 
-          // Check late based on clockIn
+          // Check if clockIn is late
           const [expH, expM] = expectedClockIn.split(":").map(Number);
           const expected = new Date(attendance.date);
           expected.setHours(expH, expM, 0, 0);
@@ -480,7 +630,7 @@ cron.schedule("0 18 * * *", async () => {
 
     console.log("✅ Daily attendance auto-update completed.");
   } catch (err) {
-    console.error(err);
+    console.error("⚠️ Attendance Cron Error:", err);
   }
 });
 

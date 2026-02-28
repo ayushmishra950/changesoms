@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Card,
   CardContent,
@@ -57,6 +57,10 @@ import {
   Cell,
   Legend,
 } from "recharts";
+import { getDashboardSummary, getDashboardList, getDashboardOverview } from "@/services/Service";
+import { useNavigate } from "react-router-dom";
+import {getDashboardJobList, getDashboardSummaryData, getDashboardOverviewData, getDashboardPanelData} from "@/redux-toolkit/slice/job-portal/dashboardSlice";
+import { useAppDispatch, useAppSelector } from "@/redux-toolkit/hooks/hook";
 
 // Mock Data for Charts
 const applicationData = [
@@ -69,14 +73,6 @@ const applicationData = [
   { name: "Jul", applications: 349, shortlisted: 430 },
 ];
 
-const candidateStatusData = [
-  { name: "New Applied", value: 400, color: "#3b82f6" }, // Blue
-  { name: "Screening", value: 300, color: "#8b5cf6" }, // Purple
-  { name: "Interview", value: 300, color: "#f59e0b" }, // Amber
-  { name: "Offer Sent", value: 200, color: "#10b981" }, // Emerald
-  { name: "Hired", value: 278, color: "#059669" }, // Green
-  { name: "Rejected", value: 189, color: "#ef4444" }, // Red
-];
 
 // Mock Data for Recent Jobs
 const recentJobs = [
@@ -166,8 +162,40 @@ const recentActivity = [
   },
 ];
 
+const statusColors = [
+  "#3b82f6", // blue
+  "#f59e0b", // orange
+  "#8b5cf6", // purple
+  "#10b981", // green
+  "#ef4444", // red
+  "#14b8a6", // teal
+  "#6366f1", // indigo
+  "#e11d48", // pink
+];
+
 const AdminJobDashboard: React.FC = () => {
   const [timeRange, setTimeRange] = useState("Last 7 Days");
+  // const [dashboardSummary, setDashboardSummary] = useState(null);
+  // const [dashboardOverview, setDashboardOverview] = useState(null);
+  // const [dashboardPanel, setDashboardPanel] = useState(null);
+  // const [dashboardJobList, setDashboardJobList] = useState([]);
+  const navigate = useNavigate();
+  const dispatch = useAppDispatch();
+  const dashboardSummary = useAppSelector((state)=> state?.dashboardJob?.dashboardSummary);
+  const dashboardOverview = useAppSelector((state)=> state?.dashboardJob?.dashboardOverview);
+  const dashboardPanel = useAppSelector((state)=> state?.dashboardJob?.dashboardPanel);
+  const dashboardJobList = useAppSelector((state)=> state?.dashboardJob?.dashboardJobList);
+
+
+  const candidateStatusData = [
+    { name: "New Applied", value: dashboardPanel?.applied, color: "#3b82f6" }, // Blue
+    { name: "Screening", value: dashboardPanel?.screening, color: "#8b5cf6" }, // Purple
+    { name: "Interview", value: dashboardPanel?.interview, color: "#f59e0b" }, // Amber
+    // { name: "Offer Sent", value: 200, color: "#10b981" }, 
+    { name: "Shortlisted", value: dashboardPanel?.shortlisted, color: "#10b981" },
+    { name: "Hired", value: dashboardPanel?.selected, color: "#059669" }, // Green
+    { name: "Rejected", value: dashboardPanel?.rejected, color: "#ef4444" }, // Red
+  ];
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -181,6 +209,64 @@ const AdminJobDashboard: React.FC = () => {
         return <Badge variant="outline">{status}</Badge>;
     }
   };
+// {getDashboardJobList, getDashboardSummaryData, getDashboardOverviewData, getDashboardPanelData}
+  const handleGetDashboardSummary = async () => {
+    try {
+      const res = await getDashboardSummary();
+      if (res.status === 200) {
+        // setDashboardSummary(res.data)
+        dispatch(getDashboardSummaryData(res?.data))
+      }
+    }
+    catch (err) {
+      console.log(err);
+    }
+  }
+
+
+  const handleGetDashboardList = async () => {
+    try {
+      const res = await getDashboardList();
+      if (res.status === 200) {
+        // setDashboardJobList(res.data?.job)
+        dispatch(getDashboardJobList(res?.data?.job))
+      }
+    }
+    catch (err) {
+      console.log(err);
+    }
+  }
+
+
+  const handleGetDashboardOverview = async () => {
+    try {
+      const res = await getDashboardOverview();
+      console.log(res)
+      if (res.status === 200) {
+        // setDashboardOverview(res.data?.monthly)
+        // setDashboardPanel(res.data?.total)
+        dispatch(getDashboardOverviewData(res.data?.monthly));
+        dispatch(getDashboardPanelData(res.data?.total))
+      }
+    }
+    catch (err) {
+      console.log(err);
+    }
+  }
+  useEffect(() => {
+  if ( !dashboardJobList?.length || !dashboardOverview || !dashboardPanel || !dashboardSummary) {
+    handleGetDashboardSummary();
+    handleGetDashboardList();
+    handleGetDashboardOverview();
+  }
+}, [ dashboardJobList?.length, dashboardOverview?.length, dashboardPanel, dashboardSummary]);
+
+  const statusKeys = useMemo(() => {
+    if (!dashboardOverview || dashboardOverview.length === 0) return [];
+    return Object.keys(dashboardOverview[0]).filter(
+      (key) => key !== "month"
+    );
+  }, [dashboardOverview]);
 
   return (
     <>
@@ -211,10 +297,10 @@ const AdminJobDashboard: React.FC = () => {
               <Briefcase className="h-4 w-4 text-blue-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">320</div>
+              <div className="text-2xl font-bold">{dashboardSummary?.totalJobs}</div>
               <p className="text-xs text-green-600 flex items-center mt-1">
                 <TrendingUp className="h-3 w-3 mr-1" />
-                +12% from last month
+                {dashboardSummary?.totalJobsCurrentMonth > 0 ? `+${dashboardSummary?.totalJobsCurrentMonth}` : 0} from this month
               </p>
             </CardContent>
           </Card>
@@ -225,10 +311,10 @@ const AdminJobDashboard: React.FC = () => {
               <Users className="h-4 w-4 text-purple-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">1,250</div>
+              <div className="text-2xl font-bold">{dashboardSummary?.activeApplications}</div>
               <p className="text-xs text-green-600 flex items-center mt-1">
                 <TrendingUp className="h-3 w-3 mr-1" />
-                +5.2% from last month
+                {dashboardSummary?.activeApplicationsCurrentMonth > 0 ? `+${dashboardSummary?.activeApplicationsCurrentMonth}` : 0} from this month
               </p>
             </CardContent>
           </Card>
@@ -239,10 +325,10 @@ const AdminJobDashboard: React.FC = () => {
               <Calendar className="h-4 w-4 text-amber-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">45</div>
+              <div className="text-2xl font-bold">{dashboardSummary?.interviewScheduled}</div>
               <p className="text-xs text-red-600 flex items-center mt-1">
                 <TrendingUp className="h-3 w-3 mr-1 rotate-180" />
-                -2% from last month
+                {dashboardSummary?.interviewScheduledCurrentMonth > 0 ? `+${dashboardSummary?.interviewScheduledCurrentMonth}` : 0} from this month
               </p>
             </CardContent>
           </Card>
@@ -253,10 +339,10 @@ const AdminJobDashboard: React.FC = () => {
               <CheckCircle2 className="h-4 w-4 text-emerald-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">18</div>
+              <div className="text-2xl font-bold">{dashboardSummary?.hiredCandidates}</div>
               <p className="text-xs text-green-600 flex items-center mt-1">
                 <TrendingUp className="h-3 w-3 mr-1" />
-                +8% from last month
+                {dashboardSummary?.hiredCandidatesCurrentMonth > 0 ? `+${dashboardSummary?.hiredCandidatesCurrentMonth}` : 0} from this month
               </p>
             </CardContent>
           </Card>
@@ -265,7 +351,7 @@ const AdminJobDashboard: React.FC = () => {
         {/* Charts Section */}
         <div className="grid grid-cols-1 lg:grid-cols-7 gap-6">
           {/* Main Chart - Applications Overview */}
-          <Card className="lg:col-span-4 shadow-sm">
+          {/* <Card className="lg:col-span-4 shadow-sm">
             <CardHeader>
               <CardTitle>Applications Overview</CardTitle>
               <CardDescription>
@@ -296,6 +382,85 @@ const AdminJobDashboard: React.FC = () => {
                     />
                     <Area type="monotone" dataKey="applications" stroke="#3b82f6" strokeWidth={2} fillOpacity={1} fill="url(#colorApps)" name="Total Applied" />
                     <Area type="monotone" dataKey="shortlisted" stroke="#8b5cf6" strokeWidth={2} fillOpacity={1} fill="url(#colorShort)" name="Shortlisted" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card> */}
+
+
+
+          <Card className="lg:col-span-4 shadow-sm">
+            <CardHeader>
+              <CardTitle>Applications Overview</CardTitle>
+              <CardDescription>
+                Monthly application trends for the current year.
+              </CardDescription>
+            </CardHeader>
+
+            <CardContent className="pl-0">
+              <div className="h-[300px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart
+                    data={dashboardOverview || []}
+                    margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+                  >
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      vertical={false}
+                      opacity={0.1}
+                    />
+
+                    <XAxis
+                      dataKey="month"
+                      stroke="#888888"
+                      fontSize={12}
+                      tickLine={false}
+                      axisLine={false}
+                    />
+
+                    <YAxis
+                      stroke="#888888"
+                      fontSize={12}
+                      tickLine={false}
+                      axisLine={false}
+                    />
+
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "#fff",
+                        borderRadius: "8px",
+                        border: "1px solid #e5e7eb",
+                        boxShadow:
+                          "0 4px 6px -1px rgb(0 0 0 / 0.1)",
+                      }}
+                    />
+
+                    <Legend
+                      verticalAlign="bottom"
+                      align="center"
+                      layout="horizontal"
+                      wrapperStyle={{
+                        fontSize: "14px",
+                        paddingTop: "10px",
+                        whiteSpace: "nowrap",
+                      }}
+                      iconSize={10}
+                    />
+
+
+                    {statusKeys.map((key, index) => (
+                      <Area
+                        key={key}
+                        type="monotone"
+                        dataKey={key}
+                        stroke={statusColors[index % statusColors.length]}
+                        fill={statusColors[index % statusColors.length]}
+                        fillOpacity={0.2}
+                        strokeWidth={2}
+                        name={key.charAt(0).toUpperCase() + key.slice(1)}
+                      />
+                    ))}
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
@@ -345,16 +510,16 @@ const AdminJobDashboard: React.FC = () => {
         </div>
 
         {/* Bottom Section - Tables and Lists */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 gap-6">
 
           {/* Recent Job Posts Table */}
-          <Card className="lg:col-span-2 shadow-sm">
+          <Card className="shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
                 <CardTitle>Recent Job Postings</CardTitle>
                 <CardDescription>A list of recently posted jobs.</CardDescription>
               </div>
-              <Button variant="outline" size="sm" className="hidden sm:flex">
+              <Button variant="outline" size="sm" className="hidden sm:flex" onClick={() => { navigate("/jobs/jobs") }}>
                 View All
                 <ArrowUpRight className="ml-2 h-4 w-4" />
               </Button>
@@ -367,49 +532,32 @@ const AdminJobDashboard: React.FC = () => {
                     <TableHead>Location</TableHead>
                     <TableHead>Applicants</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Action</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {recentJobs.map((job) => (
-                    <TableRow key={job.id} className="hover:bg-muted/50 transition-colors">
+                  {dashboardJobList?.map((job) => (
+                    <TableRow key={job._id} className="hover:bg-muted/50 transition-colors">
                       <TableCell>
                         <div className="flex items-center gap-3">
                           <Avatar className="h-9 w-9 rounded-lg">
-                            <AvatarImage src={job.logo} alt={job.company} />
-                            <AvatarFallback className="rounded-lg">{job.company.substring(0, 2).toUpperCase()}</AvatarFallback>
+                            <AvatarImage src={job.companyJobId?.logo} alt={job.companyJobId?.name} />
+                            <AvatarFallback className="rounded-lg">{job?.companyJobId?.name?.substring(0, 2).toUpperCase()}</AvatarFallback>
                           </Avatar>
                           <div>
-                            <div className="font-medium">{job.title}</div>
+                            <div className="font-medium">{job.jobTitle}</div>
                             <div className="text-xs text-muted-foreground">{job.company}</div>
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">{job.location}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">{job.locationType}</TableCell>
                       <TableCell className="text-sm">
                         <div className="flex items-center gap-2">
                           <Users className="h-3 w-3 text-gray-400" />
-                          {job.applicants}
+                          {job.applications?.length}
                         </div>
                       </TableCell>
                       <TableCell>{getStatusBadge(job.status)}</TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0">
-                              <span className="sr-only">Open menu</span>
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                            <DropdownMenuItem>View Details</DropdownMenuItem>
-                            <DropdownMenuItem>Edit Job</DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem className="text-red-600">Delete Job</DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
+
                     </TableRow>
                   ))}
                 </TableBody>
@@ -418,7 +566,7 @@ const AdminJobDashboard: React.FC = () => {
           </Card>
 
           {/* Recent Activity Feed */}
-          <Card className="shadow-sm">
+          {/* <Card className="shadow-sm">
             <CardHeader>
               <CardTitle>Recent Activity</CardTitle>
               <CardDescription>Latest updates from your team.</CardDescription>
@@ -446,7 +594,7 @@ const AdminJobDashboard: React.FC = () => {
                 ))}
               </div>
             </CardContent>
-          </Card>
+          </Card> */}
 
         </div>
       </div>

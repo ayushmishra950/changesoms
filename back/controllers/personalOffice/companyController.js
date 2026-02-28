@@ -22,6 +22,8 @@ const addCompany = async (req, res) => {
     if (admin.role !== "super_admin") {
       return res.status(401).json({ message: "Not authorized" });
     }
+ if (await Company.findOne({ email }))
+      return res.status(400).json({ message: "Email already exists" });
 
     // Upload logo if file exists
     let logoUrl = "";
@@ -32,9 +34,7 @@ const addCompany = async (req, res) => {
     // if (domain && (await Company.findOne({ domain })))
     //   return res.status(400).json({ message: "Domain already exists" });
 
-    if (await Company.findOne({ email }))
-      return res.status(400).json({ message: "Email already exists" });
-
+   
 
 
     const company = await Company.create({
@@ -182,7 +182,7 @@ const getCompanyById = async (req, res) => {
    GET COMPANY BY ID
 ------------------------------------------------- */
 const getCompanyDetail = async (req, res) => {
-  const {companyId} = req.query;
+  const { companyId } = req.query;
   try {
     const company = await Company.findById(companyId).populate(
       "admins",
@@ -248,16 +248,15 @@ const updateCompany = async (req, res) => {
 ------------------------------------------------- */
 const updateCompanyLeave = async (req, res) => {
   try {
-    const {adminId, companyId, totalLeave, specialLeave} = req.body;
+    const { adminId, companyId, specialLeave } = req.body;
 
-    const company = await Company.findOne({_id:companyId});
-    if(!company) return res.status(404).json({message:"Company Not Found."});
-    const admin = await Admin.findOne({_id:adminId, companyId});
-    if(!admin) return res.status(404).json({message:"Admin Not Found."});
+    const company = await Company.findOne({ _id: companyId });
+    if (!company) return res.status(404).json({ message: "Company Not Found." });
+    const admin = await Admin.findOne({ _id: adminId, companyId });
+    if (!admin) return res.status(404).json({ message: "Admin Not Found." });
 
-    if(!totalLeave || !specialLeave) return res.status(404).json({messaeg:"total leave or special leave are required."})
+    if (!specialLeave) return res.status(404).json({ messaeg: "special leave are required." })
 
-    company.totalLeave = totalLeave;
     company.specialLeave = specialLeave;
 
     await company.save();

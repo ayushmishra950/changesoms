@@ -87,7 +87,7 @@ const Settings: React.FC = () => {
   }, [userData]);
 
   const handleUpdateLeave = async () => {
-    let obj = { adminId: user?._id, companyId: user?.companyId?._id, totalLeave: leaves?.totalLeave, specialLeave: leaves?.specialLeave }
+    let obj = { adminId: user?._id, companyId: user?.companyId?._id, specialLeave: leaves?.specialLeave }
     try {
       const res = await UpdateLeave(obj);
       if (res.status === 200) {
@@ -118,7 +118,7 @@ const Settings: React.FC = () => {
     }
   }
   useEffect(() => {
-    if (user?.role !== "super_admin" && (Object.keys(companyDetail??{})?.length === 0 || settingRefresh)) {
+    if (user?.role !== "super_admin" && (Object.keys(companyDetail ?? {})?.length === 0 || settingRefresh)) {
       handleGetCompanyDetail()
     }
   }, [settingRefresh, companyDetail])
@@ -250,7 +250,7 @@ const Settings: React.FC = () => {
               {/* Change Avatar */}
               <div className="flex flex-col gap-2">
                 {/* <label htmlFor="profileImageInput"> */}
-                  <Button type='button' variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>Change Avatar</Button>
+                <Button type='button' variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>Change Avatar</Button>
                 {/* </label> */}
                 <input
                   type="file"
@@ -443,9 +443,9 @@ const Settings: React.FC = () => {
 
             <CardContent className="space-y-6">
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
                 {/* Total Leaves */}
-                <div className="space-y-2">
+                {/* <div className="space-y-2">
                   <Label htmlFor="totalLeaves">Total Leaves</Label>
                   <Input
                     id="totalLeaves"
@@ -454,7 +454,7 @@ const Settings: React.FC = () => {
                     onChange={(e) => { setLeaves({ ...leaves, totalLeave: e.target.value }) }}
                     min={0}
                   />
-                </div>
+                </div> */}
 
                 {/* Special Leave */}
                 <div className="space-y-2">

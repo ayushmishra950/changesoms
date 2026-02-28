@@ -41,6 +41,10 @@ const candidateSchema = new mongoose.Schema(
             type: String,
             required: true,
         },
+        profileImage:{
+           type:String,
+           default: ""
+        },
 
         designation: {
             type: String,
@@ -83,7 +87,8 @@ const candidateSchema = new mongoose.Schema(
 
         employmentType: {
             type: String,
-            enum: ["fullTime", "partTime", "contract", "remote"],
+            enum:["fullTime", "partTime", "internship", "contract", "remote"],
+            default:"fullTime",
             required: true,
         },
 
@@ -115,13 +120,6 @@ const candidateSchema = new mongoose.Schema(
             type: Number,
             required: true,
         },
-
-        candidateStatus: {
-            type: String,
-            enum: ["screening", "shortlisted", "interview", "selected", "rejected"],
-            default: "screening",
-        },
-        //         screening // shortlisted // interview_scheduled// interview_completed// selected// rejected// on_hold// offer_released// offer_accepted// offer_declined
 
         remarks: {
             type: String,

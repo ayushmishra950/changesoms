@@ -840,11 +840,12 @@ export const roleStatusChange = async (obj: any) => {
 export const addCandidate = async (obj: any) => {
   const res = await axios.post(
     `${import.meta.env.VITE_API_URL}/api/candidate/add`,
-    obj
+    obj,
+    { headers: { "Content-Type": "multipart/form-data" } }
   );
 
   return res;
-}
+};
 
 
 
@@ -870,7 +871,8 @@ export const getSingleCandidate = async (obj: any) => {
 export const updateCandidate = async (obj: any) => {
   const res = await axios.put(
     `${import.meta.env.VITE_API_URL}/api/candidate/update`,
-    obj
+    obj,
+    { headers: { "Content-Type": "multipart/form-data" } }
   );
 
   return res;
@@ -891,6 +893,273 @@ export const candidateStatusChange = async (obj: any) => {
 export const deleteCandidate = async (id: string) => {
   const res = await axios.delete(
     `${import.meta.env.VITE_API_URL}/api/candidate/delete/${id}`);
+
+  return res;
+}
+
+
+
+
+
+
+
+
+
+
+export const addCompanyJob = async (obj: any) => {
+  const res = await axios.post(
+    `${import.meta.env.VITE_API_URL}/api/companyJob/add`,
+    obj,
+    { headers: { "Content-Type": "multipart/form-data" } }
+  );
+
+  return res;
+};
+
+
+
+export const getAllCompanyJob = async () => {
+  const res = await axios.get(
+    `${import.meta.env.VITE_API_URL}/api/companyJob/get`
+  );
+
+  return res;
+}
+
+
+export const getSingleCompanyJob = async (obj: any) => {
+  const res = await axios.get(
+    `${import.meta.env.VITE_API_URL}/api/companyJob/getbyid`,
+    obj
+  );
+
+  return res;
+}
+
+
+export const updateCompanyJob = async (id: string, obj: any) => {
+  const res = await axios.put(
+    `${import.meta.env.VITE_API_URL}/api/companyJob/update/${id}`,
+    obj,
+    { headers: { "Content-Type": "multipart/form-data" } }
+  );
+
+  return res;
+}
+
+export const deleteCompanyJob = async (id: string) => {
+  const res = await axios.delete(
+    `${import.meta.env.VITE_API_URL}/api/companyJob/delete/${id}`);
+
+  return res;
+}
+
+
+export const CompanyJobStatusChange = async (obj: any) => {
+  const res = await axios.patch(
+    `${import.meta.env.VITE_API_URL}/api/companyJob/update-status`,
+    obj
+  );
+
+  return res;
+}
+
+
+
+export const addJob = async (obj: any) => {
+  const res = await axios.post(
+    `${import.meta.env.VITE_API_URL}/api/job/add`,
+    obj,
+  );
+
+  return res;
+};
+
+
+
+export const getAllJob = async () => {
+  const res = await axios.get(
+    `${import.meta.env.VITE_API_URL}/api/job/get`
+  );
+
+  return res;
+}
+
+
+export const getSingleJob = async (obj: any) => {
+  const res = await axios.get(
+    `${import.meta.env.VITE_API_URL}/api/job/getbyid`,
+    obj
+  );
+
+  return res;
+}
+
+
+export const updateJob = async (obj: any) => {
+  const res = await axios.put(
+    `${import.meta.env.VITE_API_URL}/api/job/update`,
+    obj,
+  );
+
+  return res;
+}
+
+export const deleteJob = async (id: string) => {
+  const res = await axios.delete(
+    `${import.meta.env.VITE_API_URL}/api/job/delete/${id}`);
+
+  return res;
+}
+
+
+export const JobStatusChange = async (id, status) => {
+  const res = await axios.patch(
+    `${import.meta.env.VITE_API_URL}/api/job/status/${id}`, { status });
+
+  return res;
+}
+
+
+export const JobPublished = async (id) => {
+  const res = await axios.patch(
+    `${import.meta.env.VITE_API_URL}/api/job/publish/${id}`);
+
+  return res;
+}
+
+
+export const addApplication = async (obj: any) => {
+  const res = await axios.post(
+    `${import.meta.env.VITE_API_URL}/api/application/add`,
+    obj,
+  );
+
+  return res;
+};
+
+
+
+export const getAllApplication = async () => {
+  const res = await axios.get(
+    `${import.meta.env.VITE_API_URL}/api/application/get`
+  );
+
+  return res;
+}
+
+
+export const getSingleApplication = async (obj: any) => {
+  const res = await axios.get(
+    `${import.meta.env.VITE_API_URL}/api/application/getbyid`,
+    obj
+  );
+
+  return res;
+}
+
+
+export const updateApplication = async (id, obj: any) => {
+  const res = await axios.put(
+    `${import.meta.env.VITE_API_URL}/api/application/update/${id}`,
+    obj,
+  );
+
+  return res;
+}
+
+export const deleteApplication = async (id: string) => {
+  const res = await axios.delete(
+    `${import.meta.env.VITE_API_URL}/api/application/delete/${id}`);
+
+  return res;
+}
+
+
+export const applicationStatusChange = async (obj) => {
+  const res = await axios.patch(
+    `${import.meta.env.VITE_API_URL}/api/application/status/update`, obj);
+
+  return res;
+}
+
+
+
+
+
+export const getDashboardSummary = async () => {
+  const res = await axios.get(
+    `${import.meta.env.VITE_API_URL}/api/dashboard/dashboard/summary`
+  );
+
+  return res;
+}
+
+
+
+export const getDashboardList = async () => {
+  const res = await axios.get(
+    `${import.meta.env.VITE_API_URL}/api/dashboard/dashboard/list`
+  );
+
+  return res;
+}
+
+
+
+export const getDashboardOverview = async () => {
+  const res = await axios.get(
+    `${import.meta.env.VITE_API_URL}/api/dashboard/dashboard/overview`
+  );
+
+  return res;
+}
+
+
+
+// lead-portal k liye
+
+export const addProduct = async (obj: any) => {
+  const res = await axios.post(
+    `${import.meta.env.VITE_API_URL}/api/product/add`,
+    obj,
+  );
+
+  return res;
+}
+
+
+export const getAllProduct = async () => {
+  const res = await axios.get(
+    `${import.meta.env.VITE_API_URL}/api/product/get`
+  );
+
+  return res;
+}
+
+
+export const getSingleProduct = async (obj: any) => {
+  const res = await axios.get(
+    `${import.meta.env.VITE_API_URL}/api/product/getbyid`,
+    obj
+  );
+
+  return res;
+}
+
+
+export const updateProduct = async (id: string, obj: any) => {
+  const res = await axios.put(
+    `${import.meta.env.VITE_API_URL}/api/product/update/${id}`,
+    obj,
+  );
+
+  return res;
+}
+
+export const deleteProduct = async (id: string) => {
+  const res = await axios.delete(
+    `${import.meta.env.VITE_API_URL}/api/product/delete/${id}`);
 
   return res;
 }

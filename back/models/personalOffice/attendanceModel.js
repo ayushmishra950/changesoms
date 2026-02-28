@@ -5,10 +5,11 @@ const AttendanceSchema = new Schema(
   {
     date: { type: Date, required: true },
     userId: { type: Schema.Types.ObjectId, ref: "Employee", required: true },
-    status: { type: String, enum: ["Present", "Absent", "Half Day", "Late", "Clocked In"], default: "Clocked In" },
+    status: { type: String, enum: ["Present", "Absent", "Half Day", "Late", "Clocked In", "Leave"], default: "Clocked In" },
     clockIn: { type: String, default: "-" },   // HH:MM
     clockOut: { type: String, default: "-" },  // HH:MM
     hoursWorked: { type: Number, default: 0 },
+    message: { type: String, default: "" },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Company",

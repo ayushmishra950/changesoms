@@ -13,106 +13,14 @@ import { Helmet } from "react-helmet-async";
 import AddCandidateForm from "@/job-portal/forms/CandidateDialog";
 import { useAppDispatch, useAppSelector } from "@/redux-toolkit/hooks/hook";
 import { getCandidates } from "@/redux-toolkit/slice/job-portal/candidateSlice";
-import { getAllCandidates } from "@/services/Service";
-import { formatDate } from "@/services/allFunctions";
-
-// Mock Data
-const candidatesData = [
-  {
-    id: 1,
-    name: "Rahul Sharma",
-    email: "rahul.sharma@example.com",
-    phone: "+91 98765 43210",
-    role: "Full Stack Developer",
-    appliedDate: "2024-03-10",
-    status: "Shortlisted",
-    experience: "4 Years",
-    location: "Bangalore, India",
-    skills: ["React", "Node.js", "TypeScript", "AWS"],
-    avatar: "https://github.com/shadcn.png",
-    resumeLink: "#",
-  },
-  {
-    id: 2,
-    name: "Priya Singh",
-    email: "priya.singh@example.com",
-    phone: "+91 98123 45678",
-    role: "UI/UX Designer",
-    appliedDate: "2024-03-12",
-    status: "In Review",
-    experience: "3 Years",
-    location: "Mumbai, India",
-    skills: ["Figma", "Adobe XD", "Sketch", "HTML/CSS"],
-    avatar: "https://github.com/shadcn.png",
-    resumeLink: "#",
-  },
-  {
-    id: 3,
-    name: "Amit Patel",
-    email: "amit.patel@example.com",
-    phone: "+91 99887 76655",
-    role: "Data Scientist",
-    appliedDate: "2024-03-08",
-    status: "Rejected",
-    experience: "5 Years",
-    location: "Delhi, India",
-    skills: ["Python", "TensorFlow", "Pandas", "SQL"],
-    avatar: "https://github.com/shadcn.png",
-    resumeLink: "#",
-  },
-  {
-    id: 4,
-    name: "Sneha Gupta",
-    email: "sneha.gupta@example.com",
-    phone: "+91 91234 56789",
-    role: "Product Manager",
-    appliedDate: "2024-03-14",
-    status: "Interview",
-    experience: "6 Years",
-    location: "Pune, India",
-    skills: ["Agile", "JIRA", "Product Strategy", "Scrum"],
-    avatar: "https://github.com/shadcn.png",
-    resumeLink: "#",
-  },
-  {
-    id: 5,
-    name: "Vikram Malhotra",
-    email: "vikram.m@example.com",
-    phone: "+91 88776 65544",
-    role: "DevOps Engineer",
-    appliedDate: "2024-03-11",
-    status: "Hired",
-    experience: "4.5 Years",
-    location: "Hyderabad, India",
-    skills: ["Docker", "Kubernetes", "CI/CD", "Azure"],
-    avatar: "https://github.com/shadcn.png",
-    resumeLink: "#",
-  },
-  {
-    id: 6,
-    name: "Anjali Verma",
-    email: "anjali.v@example.com",
-    phone: "+91 76543 21098",
-    role: "Full Stack Developer",
-    appliedDate: "2024-03-15",
-    status: "New",
-    experience: "2 Years",
-    location: "Bangalore, India",
-    skills: ["MERN Stack", "Redux", "Tailwind"],
-    avatar: "https://github.com/shadcn.png",
-    resumeLink: "#",
-  },
-];
-
-const statusActions = {
-  screening: ["shortlisted", "rejected"],
-  shortlisted: ["interview", "rejected"],
-  interview: ["selected", "rejected"],
-  selected: [],
-  rejected: []
-};
+import { getAllCandidates, candidateStatusChange } from "@/services/Service";
+import { formatDate, getStatusBadgeClassAndText, statusActions } from "@/services/allFunctions";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 
 const CandidatesPage: React.FC = () => {
+  const { toast } = useToast();
+  const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [roleFilter, setRoleFilter] = useState("all");
@@ -131,43 +39,35 @@ const CandidatesPage: React.FC = () => {
       candidate.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       candidate.email.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus =
-      statusFilter === "all" || candidate.status === statusFilter;
+      statusFilter === "all" || candidate.candidateStatus === statusFilter;
     const matchesRole = roleFilter === "all" || candidate.role?._id === roleFilter;
 
     return matchesSearch && matchesStatus && matchesRole;
   });
-
-  // Unique Roles for Filter
-  const uniqueRoles = Array.from(
-    new Set(candidatesData.map((c) => c.role))
-  );
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "Hired":
-        return <Badge className="bg-green-100 text-green-700 hover:bg-green-200 border-none">Hired</Badge>;
-      case "Rejected":
-        return <Badge className="bg-red-100 text-red-700 hover:bg-red-200 border-none">Rejected</Badge>;
-      case "Interview":
-        return <Badge className="bg-purple-100 text-purple-700 hover:bg-purple-200 border-none">Interview</Badge>;
-      case "Shortlisted":
-        return <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-200 border-none">Shortlisted</Badge>;
-      case "New":
-        return <Badge className="bg-blue-50 text-blue-600 hover:bg-blue-100 border-blue-200">New</Badge>;
-      default:
-        return <Badge variant="secondary">{status}</Badge>;
-    }
-  };
 
   const openCandidateDetails = (candidate: any) => {
     setSelectedCandidate(candidate);
     setIsSheetOpen(true);
   };
 
-  const updateStatus = (e, id, status) => {
+  const updateStatus = async (e, id, status) => {
     e.stopPropagation();
-    // API call yaha karo
-    console.log(id, status);
+    let obj = { adminId:user?._id, userId:id, status }
+    try {
+      const response = await candidateStatusChange(obj);
+      if (response.status === 200) {
+        if(selectedCandidate?._id === id){
+    setSelectedCandidate(prev => ({...prev, candidateStatus: status}));
+  }
+          toast({ title: "Candidate status updated successfully", description: response?.data?.message });
+        setCandidateListRefresh(true);
+      }
+    }
+    catch (error) {
+      console.error("Error updating candidate status:", error);
+      toast({ title: "Error updating candidate status", description: error?.message|| error?.response?.data?.message, variant:"destructive" });
+    }
+
   };
 
   const handleGetCandidates = async () => {
@@ -195,6 +95,7 @@ const CandidatesPage: React.FC = () => {
         isOpen={isCandidateFormOpen}
         onClose={() => { setIsCandidateFormOpen(false) }}
         initialData={initialData}
+        setCandidateListRefresh={setCandidateListRefresh}
       />
 
       <Helmet>
@@ -229,7 +130,7 @@ const CandidatesPage: React.FC = () => {
           <Card className="items-center p-4 flex justify-between shadow-sm">
             <div>
               <p className="text-sm font-medium text-muted-foreground">Shortlisted</p>
-              <h3 className="text-2xl font-bold mt-1">340</h3>
+              <h3 className="text-2xl font-bold mt-1">{candidateList?.filter((candidate) => candidate.candidateStatus === "shortlisted").length}</h3>
             </div>
             <div className="h-10 w-10 bg-purple-100 rounded-full flex items-center justify-center">
               <CheckCircle2 className="h-5 w-5 text-purple-600" />
@@ -247,7 +148,7 @@ const CandidatesPage: React.FC = () => {
           <Card className="items-center p-4 flex justify-between shadow-sm">
             <div>
               <p className="text-sm font-medium text-muted-foreground">Hired</p>
-              <h3 className="text-2xl font-bold mt-1">45</h3>
+              <h3 className="text-2xl font-bold mt-1">{candidateList?.filter((candidate) => candidate.candidateStatus === "selected").length}</h3>
             </div>
             <div className="h-10 w-10 bg-green-100 rounded-full flex items-center justify-center">
               <Briefcase className="h-5 w-5 text-green-600" />
@@ -275,30 +176,27 @@ const CandidatesPage: React.FC = () => {
                     <SelectValue placeholder="All Roles" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Roles</SelectItem>
+                    <SelectItem value="all" className="cursor-pointer">All Roles</SelectItem>
                     {roleList.map((role) => (
-                      <SelectItem key={role?._id} value={role?._id}>{role?.name}</SelectItem>
+                      <SelectItem key={role?._id} value={role?._id} className="cursor-pointer">{role?.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
 
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                {/* <Select value={statusFilter} onValueChange={setStatusFilter}>
                   <SelectTrigger className="w-full sm:w-[180px]">
                     <SelectValue placeholder="All Status" />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="new">New</SelectItem>
-                    <SelectItem value="in_review">In Review</SelectItem>
-                    <SelectItem value="shortlisted">Shortlisted</SelectItem>
-                    <SelectItem value="interview">Interview</SelectItem>
-                    <SelectItem value="Hired">Hired</SelectItem>
-                    <SelectItem value="Rejected">Rejected</SelectItem>
+                  <SelectContent >
+                    <SelectItem value="all" className="cursor-pointer">All Status</SelectItem>
+                    <SelectItem value="screening" className="cursor-pointer">In Review</SelectItem>
+                    <SelectItem value="shortlisted" className="cursor-pointer">Shortlisted</SelectItem>
+                    <SelectItem value="interview" className="cursor-pointer">Interview</SelectItem>
+                    <SelectItem value="selected" className="cursor-pointer">Hired</SelectItem>
+                    <SelectItem value="rejected" className="cursor-pointer">Rejected</SelectItem>
                   </SelectContent>
-                </Select>
-                <Button variant="outline" size="icon" title="Reset Filters" onClick={() => { setStatusFilter('All'); setRoleFilter('All'); setSearchQuery('') }}>
-                  <Filter className="h-4 w-4" />
-                </Button>
+                </Select> */}
+
               </div>
             </div>
           </CardContent>
@@ -313,7 +211,7 @@ const CandidatesPage: React.FC = () => {
                   <TableHead>Candidate</TableHead>
                   <TableHead>Role Applied</TableHead>
                   <TableHead>Date Applied</TableHead>
-                  <TableHead>Status</TableHead>
+                  {/* <TableHead>Status</TableHead> */}
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -324,7 +222,7 @@ const CandidatesPage: React.FC = () => {
                       <TableCell>
                         <div className="flex items-center gap-3">
                           <Avatar>
-                            <AvatarImage src={candidate?.avatar} alt={candidate?.name} />
+                            <AvatarImage src={candidate?.profileImage} alt={candidate?.name} />
                             <AvatarFallback>{candidate?.name?.substring(0, 2).toUpperCase()}</AvatarFallback>
                           </Avatar>
                           <div>
@@ -335,7 +233,7 @@ const CandidatesPage: React.FC = () => {
                       </TableCell>
                       <TableCell>{candidate?.role?.name}</TableCell>
                       <TableCell>{formatDate(candidate?.createdAt)}</TableCell>
-                      <TableCell>{getStatusBadge(candidate?.candidateStatus)}</TableCell>
+                      {/* <TableCell><Badge className={getStatusBadgeClassAndText(candidate?.candidateStatus)?.className}>{getStatusBadgeClassAndText(candidate?.candidateStatus)?.text}</Badge></TableCell> */}
                       <TableCell className="text-right">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
@@ -362,7 +260,7 @@ const CandidatesPage: React.FC = () => {
                             </DropdownMenuItem>
 
                             {/* Dynamic Status Buttons */}
-                            {statusActions[candidate.candidateStatus]?.map((action) => (
+                            {/* {statusActions[candidate.candidateStatus]?.map((action) => (
                               <DropdownMenuItem
                                 key={action}
                                 onClick={(e) =>
@@ -374,8 +272,9 @@ const CandidatesPage: React.FC = () => {
                                 {action === "interview" && "Schedule Interview"}
                                 {action === "selected" && "Select"}
                                 {action === "rejected" && "Reject"}
+                                {action === "screening" && "In Review"} 
                               </DropdownMenuItem>
-                            ))}
+                            ))} */}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>
@@ -408,13 +307,13 @@ const CandidatesPage: React.FC = () => {
               {/* Profile Header */}
               <div className="flex items-center gap-4 py-4 border-b">
                 <Avatar className="h-16 w-16">
-                  <AvatarImage src={selectedCandidate.avatar} />
-                  <AvatarFallback className="text-lg">{selectedCandidate.name.substring(0, 2).toUpperCase()}</AvatarFallback>
+                  <AvatarImage src={selectedCandidate?.profileImage} />
+                  <AvatarFallback className="text-lg">{selectedCandidate?.name?.substring(0, 2).toUpperCase()}</AvatarFallback>
                 </Avatar>
                 <div>
-                  <h2 className="text-xl font-bold">{selectedCandidate.name}</h2>
-                  <p className="text-muted-foreground">{selectedCandidate.role}</p>
-                  <div className="mt-2 text-sm">{getStatusBadge(selectedCandidate.status)}</div>
+                  <h2 className="text-xl font-bold">{selectedCandidate?.name}</h2>
+                  <p className="text-muted-foreground">{selectedCandidate?.role?.name}</p>
+                  {/* <div className="mt-2 text-sm"><Badge className={getStatusBadgeClassAndText(selectedCandidate?.candidateStatus)?.className}>{getStatusBadgeClassAndText(selectedCandidate?.candidateStatus)?.text}</Badge></div> */}
                 </div>
               </div>
 
@@ -423,15 +322,15 @@ const CandidatesPage: React.FC = () => {
                 <h3 className="text-sm font-medium text-gray-500 uppercase">Contact Information</h3>
                 <div className="flex items-center gap-3">
                   <Mail className="h-4 w-4 text-gray-400" />
-                  <span>{selectedCandidate.email}</span>
+                  <span>{selectedCandidate?.email}</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <Phone className="h-4 w-4 text-gray-400" />
-                  <span>{selectedCandidate.phone}</span>
+                  <span>{selectedCandidate?.mobile}</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <MapPin className="h-4 w-4 text-gray-400" />
-                  <span>{selectedCandidate.location}</span>
+                  <span>{selectedCandidate?.address}</span>
                 </div>
               </div>
 
@@ -440,12 +339,16 @@ const CandidatesPage: React.FC = () => {
                 <h3 className="text-sm font-medium text-gray-500 uppercase">Professional Details</h3>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="p-3 bg-gray-50 rounded-lg">
-                    <span className="text-xs text-gray-500">Experience</span>
-                    <p className="font-medium">{selectedCandidate.experience}</p>
+                    <span className="text-xs text-gray-500">Total Experience</span>
+                    <p className="font-medium">{selectedCandidate?.totalExperience}</p>
+                  </div>
+                   <div className="p-3 bg-gray-50 rounded-lg">
+                    <span className="text-xs text-gray-500">Relevant Experience</span>
+                    <p className="font-medium">{selectedCandidate?.relevantExperience}</p>
                   </div>
                   <div className="p-3 bg-gray-50 rounded-lg">
                     <span className="text-xs text-gray-500">Applied Date</span>
-                    <p className="font-medium">{selectedCandidate.appliedDate}</p>
+                    <p className="font-medium">{formatDate(selectedCandidate.createdAt)}</p>
                   </div>
                 </div>
               </div>
@@ -461,13 +364,40 @@ const CandidatesPage: React.FC = () => {
               </div>
 
               {/* Actions */}
-              <div className="pt-6 border-t flex flex-col gap-3">
-                <Button className="w-full bg-blue-600 hover:bg-blue-700">Schedule Interview</Button>
-                <div className="grid grid-cols-2 gap-3">
-                  <Button variant="outline" className="w-full border-green-600 text-green-600 hover:bg-green-50">Hire Candidate</Button>
-                  <Button variant="outline" className="w-full border-red-600 text-red-600 hover:bg-red-50">Reject Application</Button>
-                </div>
-              </div>
+        {/* { statusActions[selectedCandidate?.candidateStatus]?.length > 0 && (
+  <div className="pt-6 border-t flex flex-col gap-3">
+    {statusActions[selectedCandidate?.candidateStatus].map((action) => {
+      // Button ke liye default props
+      let btnClass = "w-full";
+      let btnVariant: "default" | "outline" = "default";
+      let btnLabel = action;
+
+      // Styling logic action ke type ke hisaab se
+      if (action === "interview") {
+        btnClass += " bg-blue-600 hover:bg-blue-700 text-white";
+      } else if (action === "selected") {
+        btnClass += " border-green-600 text-green-600 hover:bg-green-50";
+        btnVariant = "outline";
+        btnLabel = "Hire Candidate";
+      } else if (action === "rejected") {
+        btnClass += " border-red-600 text-red-600 hover:bg-red-50";
+        btnVariant = "outline";
+        btnLabel = "Reject Application";
+      }
+
+      return (
+        <Button
+          key={action}
+          className={btnClass}
+          variant={btnVariant}
+          onClick={(e) => updateStatus(e,selectedCandidate._id, action)}
+        >
+          {btnLabel==="screening"?"In Review":btnLabel}
+        </Button>
+      );
+    })}
+  </div>
+)} */}
             </div>
           )}
         </SheetContent>

@@ -25,6 +25,13 @@ const authMiddleware = require("./middleware/authMiddleware.js");
 // job-portal k liye
 const roleRoutes = require("./routes/job-portal-route/roleRoute.js");
 const candidateRoutes = require("./routes/job-portal-route/candidateRoute.js");
+const companyJobRoutes = require("./routes/job-portal-route/companyJobRoute.js");
+const jobRoutes = require("./routes/job-portal-route/jobRoute.js");
+const applicationRoutes = require("./routes/job-portal-route/applicationRoute.js");
+const dashboardRoutes = require("./routes/job-portal-route/dashboardRoute.js");
+
+// lead-portal k liye
+const productRoutes = require("./routes/lead-portal-route/productRoute.js");
 
 const swaggerSpec = require("./swagger");
 const { initSocket } = require("./socketHelpers.js"); // ✅ import only initSocket
@@ -69,6 +76,13 @@ app.use("/api/task", taskRoutes);
 // job-portal k liye
 app.use("/api/role", roleRoutes);
 app.use("/api/candidate", candidateRoutes);
+app.use("/api/companyJob", companyJobRoutes);
+app.use("/api/job", jobRoutes);
+app.use("/api/application", applicationRoutes);
+app.use("/api/dashboard", dashboardRoutes);
+
+// lead-portal k liye
+app.use("/api/product", productRoutes);
 
 // Test route
 app.get("/", (req, res) => {

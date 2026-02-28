@@ -17,22 +17,45 @@ interface AddCandidateFormProps {
   isOpen: boolean;
   onClose: () => void;
   initialData?: any;
+  setCandidateListRefresh: (value: boolean) => void;
 }
 
-const AddCandidateForm: React.FC<AddCandidateFormProps> = ({ isOpen, onClose, initialData }) => {
+const AddCandidateForm: React.FC<AddCandidateFormProps> = ({ isOpen, onClose, initialData, setCandidateListRefresh }) => {
   const { toast } = useToast();
   const dobRef = useRef(null);
+  const formRef = useRef(null);
+  const imageRef = useRef(null);
   const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
+  const [showArrow, setShowArrow] = useState(true);
   const [form, setForm] = useState({
-    name: "", email: "", mobile: "", role: "", resume: null, gender: "male", dob: "", address: "", designation: "", totalExperience: "", relevantExperience: "", currentCTC: "", expectedSalary: "", noticePeriod: "", employmentType: "fullTime", preferredLocation: "", skills: [], highestQualification: "", universityName: "", passingYear: "", remarks: ""
+    name: "", email: "", mobile: "", role: "", profileImage: null, resume: null, gender: "male", dob: "", address: "", designation: "", totalExperience: "", relevantExperience: "", currentCTC: "", expectedSalary: "", noticePeriod: "", employmentType: "fullTime", preferredLocation: "", skills: [], highestQualification: "", universityName: "", passingYear: "", remarks: ""
   });
   const [isRoleFormOpen, setIsRoleFormOpen] = useState(false);
   const [roleListRefresh, setRoleListRefresh] = useState(false);
+  const [imagePreview, setImagePreview] = useState("");
   const dispatch = useAppDispatch();
   const roleList = useAppSelector((state) => state?.role?.roles);
   const isEdit = Boolean(initialData);
 
+  const handleScroll = () => {
+    const el = formRef.current;
+
+    const isBottom =
+      el.scrollTop + el.clientHeight >= el.scrollHeight - 2;
+
+    setShowArrow(!isBottom);
+  };
+  const handleChangeImage = (e) => {
+    const file = e.target.files?.[0];
+
+    if (file) {
+      setForm({ ...form, profileImage: file });
+      // Preview generate karne ke liye
+      const previewUrl = URL.createObjectURL(file);
+      setImagePreview(previewUrl);
+    }
+  };
   useEffect(() => {
     if (initialData) {
       setForm({
@@ -56,14 +79,16 @@ const AddCandidateForm: React.FC<AddCandidateFormProps> = ({ isOpen, onClose, in
         highestQualification: initialData?.highestQualification || "",
         universityName: initialData?.universityName || "",
         passingYear: initialData?.passingYear || "",
-        remarks: initialData?.remarks || ""
+        remarks: initialData?.remarks || "",
+        profileImage: initialData?.profileImage || ""
       });
+      setImagePreview(initialData?.profileImage);
     }
   }, [initialData]);
 
   const resetForm = () => {
     setForm({
-      name: "", email: "", mobile: "", role: "", resume: null, gender: "male", dob: "", address: "", designation: "", totalExperience: "", relevantExperience: "", currentCTC: "", expectedSalary: "", noticePeriod: "", employmentType: "fullTime", preferredLocation: "", skills: [], highestQualification: "", universityName: "", passingYear: "", remarks: ""
+      name: "", email: "", mobile: "", role: "", profileImage: null, resume: null, gender: "male", dob: "", address: "", designation: "", totalExperience: "", relevantExperience: "", currentCTC: "", expectedSalary: "", noticePeriod: "", employmentType: "fullTime", preferredLocation: "", skills: [], highestQualification: "", universityName: "", passingYear: "", remarks: ""
     });
     setStep(1);
     setIsLoading(false);
@@ -72,11 +97,28 @@ const AddCandidateForm: React.FC<AddCandidateFormProps> = ({ isOpen, onClose, in
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
-    const payload = { ...form, id: isEdit ? initialData?._id : null }
+    const formData = new FormData();
+    for (const key in form) {
+      if (form.hasOwnProperty(key)) {
+        // If the field is an array (skills), append each item individually
+        if (Array.isArray(form[key])) {
+          form[key].forEach(item => formData.append(key, item));
+        } else {
+          formData.append(key, form[key]);
+        }
+      }
+    }
+
+    // Add id if edit mode
+    if (isEdit && initialData?._id) {
+      formData.append("id", initialData._id);
+    }
+
     try {
-      const res = await (isEdit ? updateCandidate(payload) : addCandidate(payload));
+      const res = await (isEdit ? updateCandidate(formData) : addCandidate(formData));
       if (res.status === 200 || res.status === 201) {
-        toast({ title: `${isEdit ? "Updated" : "Added"} Candidate.`, description: res?.data?.message })
+        toast({ title: `${isEdit ? "Updated" : "Added"} Candidate.`, description: res?.data?.message });
+        setCandidateListRefresh(true);
       }
     }
     catch (error) {
@@ -117,11 +159,11 @@ const AddCandidateForm: React.FC<AddCandidateFormProps> = ({ isOpen, onClose, in
       />
 
       <Dialog open={isOpen} onOpenChange={() => { resetForm(); onClose() }}>
-        <DialogContent>
+        <DialogContent className="md:w-[600px]">
           <DialogHeader>
             <DialogTitle>
               <div className="flex items-center gap-2">
-                {step === 2 && <ArrowLeft className="w-5 h-5 text-gray-700" />}
+                {step === 2 && <ArrowLeft className="w-5 h-5 text-gray-700 cursor-pointer" onClick={() => { setStep(1) }} />}
                 <span className="text-lg font-semibold">Add Candidate</span>
               </div>
             </DialogTitle>
@@ -129,10 +171,10 @@ const AddCandidateForm: React.FC<AddCandidateFormProps> = ({ isOpen, onClose, in
               Add a new candidate to the system. Step-{step}
             </DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit} ref={formRef} onScroll={handleScroll} className={step === 1 ? "relative max-h-[500px] overflow-y-auto no-scrollbar p-2" : "relative max-h-[500px] overflow-y-auto no-scrollbar p-2"}>
             {step === 1 && (
               <>
-                <Label className="block mb-2 mt-[-10px] text-xs">Name*</Label>
+                <Label className="block mb-2 text-xs">Name*</Label>
                 <Input type="text" value={form?.name} required onChange={(e) => { setForm({ ...form, name: e.target.value }) }} placeholder="Full name" className="placeholder:text-xs" />
                 <div className="flex flex-row justify-between md:mt-1">
                   <div className="flex-1">
@@ -252,10 +294,50 @@ const AddCandidateForm: React.FC<AddCandidateFormProps> = ({ isOpen, onClose, in
                     <Input type="text" value={form?.currentCTC} required onChange={(e) => { setForm({ ...form, currentCTC: e.target.value }) }} placeholder="Current CTC (in LPA)" className="placeholder:text-xs" />
                   </div>
                 </div>
+                <div className="relative w-full h-24 mt-2">
+                  <Label className="block my-2 text-xs">Profile Image(Optional)</Label>
+
+                  {/* File Input */}
+                  <Input
+                    ref={imageRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleChangeImage} // File handling
+                    className="placeholder:text-xs"
+                  />
+
+                  {/* Preview Card */}
+                  {imagePreview && (
+                    <div className="relative w-24 h-24 mt-2 border rounded overflow-hidden">
+                      <img
+                        src={imagePreview}
+                        alt="Preview"
+                        className="w-full h-full object-cover"
+                      />
+
+                      {/* Cut / Remove Icon */}
+                      <button
+                        type="button"
+                        className="absolute top-1 right-1 bg-gray-200 rounded-full p-1 hover:bg-gray-300"
+                        onClick={() => {
+                          setForm({ ...form, profileImage: null });
+                          setImagePreview(""); if (imageRef?.current) imageRef.current.value = "";
+                        }}
+                      >
+                        ✖
+                      </button>
+                    </div>
+                  )}
+                </div>
                 <div className="flex flex-row justify-end mt-2s">
                   <Button type="button" variant="outline" className="mx-2 my-2" onClick={() => { resetForm(); onClose() }}>Cancel</Button>
                   <Button type="button" variant="default" className="mx-2 my-2" onClick={() => { setStep(2) }} disabled={isLoading || !form?.name || !form?.email || !form?.mobile || !form?.address || !form?.gender || !form?.dob || !form?.address || !form?.designation || !form?.totalExperience || !form?.relevantExperience || !form?.currentCTC}>Next</Button>
                 </div>
+                {showArrow && (
+                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-black-600 text-sm animate-bounce pointer-events-none">
+                    ↓
+                  </div>
+                )}
               </>
             )}
             {
@@ -274,21 +356,22 @@ const AddCandidateForm: React.FC<AddCandidateFormProps> = ({ isOpen, onClose, in
                   <div className="flex flex-row justify-between">
                     <div className="flex-1">
                       <Label className="block my-2 text-xs">Employment Type*</Label>
-                      <Select value={form?.employmentType || "fullTime"} required onValueChange={(value: string) => { setForm({ ...form, employmentType: value }) }}>
+                      <Select value={form?.employmentType || "onSite"} required onValueChange={(value: string) => { setForm({ ...form, employmentType: value }) }}>
                         <SelectTrigger>
                           <SelectValue placeholder="Select a employment type" />
                         </SelectTrigger>
                         <SelectContent className="text-xs">
-                          <SelectItem value="fullTime">Full Time</SelectItem>
-                          <SelectItem value="partTime">Part Time</SelectItem>
-                          <SelectItem value="contract">Contract</SelectItem>
+                          <SelectItem value="fullTime">FullTime</SelectItem>
+                          <SelectItem value="partTime">PartTime</SelectItem>
+                          <SelectItem value="internship">Internship</SelectItem>
+                          <SelectItem value="contract">contract</SelectItem>
                           <SelectItem value="remote">Remote</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
                     <div className="flex-1 ml-2">
                       <Label className="block my-2 text-xs">Preferred Location*</Label>
-                      <Input type="text" value={form?.preferredLocation} required onChange={(e) => { setForm({ ...form, preferredLocation: e.target.value }) }} placeholder="Preferred location" className="placeholder:text-xs" />
+                      <Input type="text" value={form?.preferredLocation} required onChange={(e) => { setForm({ ...form, preferredLocation: e.target.value }) }} placeholder="Preferred location" className="file:text-xs" />
                     </div>
                   </div>
                   <div className="flex flex-row justify-between">
@@ -365,6 +448,7 @@ const AddCandidateForm: React.FC<AddCandidateFormProps> = ({ isOpen, onClose, in
                   </div>
                 </>
               )
+
             }
           </form>
         </DialogContent>

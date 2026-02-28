@@ -50,6 +50,7 @@ const RolePage: React.FC = () => {
       toast({ title: "Error Role.", description: err?.response?.data?.message || err?.message, variant: "destructive" })
     }
   }
+  
   const getAllRoles = async () => {
     try {
       const res = await getAllRole();

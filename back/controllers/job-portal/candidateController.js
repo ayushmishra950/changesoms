@@ -1,4 +1,6 @@
 const Candidate = require("../../models/job-portal/candidate");
+const { Admin } = require("../../models/personalOffice/authModel.js");
+const uploadToCloudinary = require("../../cloudinary/uploadToCloudinary.js");
 
 // =============================
 // 1️⃣ Add Candidate
@@ -7,11 +9,21 @@ const addCandidate = async (req, res) => {
     try {
         const data = req.body;
 
-        const candidate = new Candidate({
-            ...data,
-            candidateStatus: "screening", // default status
-        });
 
+        let resumeUrl = "";
+            if (req.files?.resume?.[0]?.buffer) {
+              resumeUrl = await uploadToCloudinary(req?.files?.resume?.[0]?.buffer)
+            }
+       let profileImageUrl = "";
+        if(req.files?.profileImage?.[0]?.buffer){
+            profileImageUrl = await uploadToCloudinary(req?.files?.profileImage?.[0]?.buffer)
+        }
+
+     const candidate = new Candidate({
+    ...data,
+    ...(resumeUrl && { resume: resumeUrl }), // only add if exists
+    ...(profileImageUrl && { profileImage: profileImageUrl }), // only add if exists
+});
         await candidate.save();
 
         res.status(201).json({
@@ -83,36 +95,46 @@ const getSingleCandidate = async (req, res) => {
 // 4️⃣ Update Candidate
 // =============================
 const updateCandidate = async (req, res) => {
-    const { id, ...obj } = req.body;
-    try {
-        const candidate = await Candidate.findByIdAndUpdate(
-            id,
-            obj,
-            { new: true, runValidators: true }
-        );
+  const { id, ...obj } = req.body;
 
-        if (!candidate) {
-            return res.status(404).json({
-                success: false,
-                message: "Candidate not found",
-            });
-        }
-
-        res.status(200).json({
-            success: true,
-            message: "Candidate updated successfully",
-            data: candidate,
-        });
-
-    } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: error.message,
-        });
+  try {
+    // Resume upload (optional)
+    if (req.files?.resume?.[0]?.buffer) {
+      const resumeUrl = await uploadToCloudinary(req.files.resume[0].buffer);
+      obj.resume = resumeUrl; // Add resume URL to update object
     }
+
+        if(req.files?.profileImage?.[0]?.buffer){
+            const profileImageUrl = await uploadToCloudinary(req?.files?.profileImage?.[0]?.buffer);
+            obj.profileImage = profileImageUrl;
+        }
+    // Update candidate
+    const candidate = await Candidate.findByIdAndUpdate(
+      id,
+      obj,
+      { new: true, runValidators: true }
+    );
+
+    if (!candidate) {
+      return res.status(404).json({
+        success: false,
+        message: "Candidate not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Candidate updated successfully",
+      data: candidate,
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
 };
-
-
 // =============================
 // 5️⃣ Delete Candidate
 // =============================
@@ -146,44 +168,28 @@ const deleteCandidate = async (req, res) => {
 // =============================
 const updateCandidateStatus = async (req, res) => {
     try {
-        const { candidateStatus } = req.body;
-
-        const allowedTransitions = {
-            screening: ["shortlisted", "rejected", "on_hold"],
-            shortlisted: ["interview_scheduled", "rejected", "on_hold"],
-            interview_scheduled: ["interview_completed", "rejected"],
-            interview_completed: ["selected", "rejected"],
-            selected: [],
-            rejected: [],
-            on_hold: ["screening", "rejected"]
-        };
-
-        const candidate = await Candidate.findById(req.params.id);
-
+        const { adminId, userId, status } = req.body;
+        const admin = await Admin.findById(adminId);
+        if (!admin) {
+            return res.status(404).json({
+                success: false,
+                message: "Admin not found",
+            });
+        }
+        const candidate = await Candidate.findById(userId);
         if (!candidate) {
             return res.status(404).json({
                 success: false,
                 message: "Candidate not found",
             });
         }
-
-        const currentStatus = candidate.candidateStatus;
-
-        if (!allowedTransitions[currentStatus].includes(candidateStatus)) {
-            return res.status(400).json({
-                success: false,
-                message: `Cannot change status from ${currentStatus} to ${candidateStatus}`,
-            });
-        }
-
-        candidate.candidateStatus = candidateStatus;
+        candidate.candidateStatus = status;
         await candidate.save();
-
         res.status(200).json({
             success: true,
-            message: "Status updated successfully",
-            data: candidate,
+            message: `Candidate status has been updated to "${status}".`,
         });
+
 
     } catch (error) {
         res.status(500).json({

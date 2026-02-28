@@ -399,15 +399,16 @@ import React, { useState, useRef, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { FolderKanban, LogOut, Menu, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { SidebarProps, navItems, taskSubMenu, JobSubMenu } from "@/services/allFunctions";
+import { SidebarProps, navItems, taskSubMenu, JobSubMenu, LeadSubMenu } from "@/services/allFunctions";
 import { useAuth } from '@/contexts/AuthContext';
 import { createPortal } from 'react-dom';
 
-const Sidebar: React.FC<SidebarProps> = ({ setTaskName, setJobName, isOpen, onToggle, setActiveSidebar, setTaskSubPage, setJobSubPage }) => {
+const Sidebar: React.FC<SidebarProps> = ({ setTaskName, setJobName, isOpen, onToggle, setActiveSidebar, setTaskSubPage, setJobSubPage, setLeadSubPage, setLeadName }) => {
   const { user, logout } = useAuth();
   const location = useLocation();
   const sidebarRef = useRef<HTMLDivElement>(null);
   const jobDropdownRef = useRef<HTMLDivElement>(null);
+  const leadDropdownRef = useRef<HTMLDivElement>(null);
 
   // Default sidebar open
   const [isLocalOpen, setLocalOpen] = useState<boolean>(isOpen);
@@ -415,9 +416,11 @@ const Sidebar: React.FC<SidebarProps> = ({ setTaskName, setJobName, isOpen, onTo
   // Submenus
   const [showTaskSubMenu, setShowTaskSubMenu] = useState(false);
   const [showJobSubMenu, setShowJobSubMenu] = useState(false);
+  const [showLeadSubMenu, setShowLeadSubMenu] = useState(false);
 
   const [dropdownPos, setDropdownPos] = useState<{ top: number, left: number }>({ top: 0, left: 0 });
   const [jobDropdownPos, setJobDropdownPos] = useState<{ top: number, left: number }>({ top: 0, left: 0 });
+  const [leadDropdownPos, setLeadDropdownPos] = useState<{ top: number, left: number }>({ top: 0, left: 0 });
 
   const handleTaskMouseEnter = (e: React.MouseEvent<HTMLLIElement, MouseEvent>) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -457,6 +460,33 @@ const Sidebar: React.FC<SidebarProps> = ({ setTaskName, setJobName, isOpen, onTo
   const handleJobMouseLeave = () => setShowJobSubMenu(false);
 
 
+  const handleLeadMouseEnter = (e: React.MouseEvent<HTMLLIElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+
+    setShowLeadSubMenu(true);
+
+    setTimeout(() => {
+      if (leadDropdownRef.current) {   // ✅ correct ref
+        const dropdownHeight = leadDropdownRef.current.offsetHeight;
+        const spaceBelow = window.innerHeight - rect.top;
+
+        let topPosition = rect.top;
+
+        if (spaceBelow < dropdownHeight) {
+          topPosition = rect.bottom - dropdownHeight;
+        }
+
+        setLeadDropdownPos({           // ✅ correct state
+          top: topPosition,
+          left: rect.right
+        });
+      }
+    }, 0);
+  };
+
+  const handleLeadMouseLeave = () => setShowLeadSubMenu(false);
+
+
   // Toggle sidebar: call both local state and parent callback
   const toggleSidebar = () => {
     setLocalOpen(prev => !prev); // for internal animation
@@ -470,6 +500,7 @@ const Sidebar: React.FC<SidebarProps> = ({ setTaskName, setJobName, isOpen, onTo
     user?.role === "employee" && user?.taskRole === "manager" ? "manager" : "employee";
 
   const filteredTaskSubMenu = taskSubMenu.filter(sub => sub.roles.includes(effectiveRole));
+  const filteredLeadSubMenu = LeadSubMenu.filter(sub => sub.roles.includes(effectiveRole));
 
   const getRoleBadge = (role: string) => {
     const roleLabels = {
@@ -484,6 +515,7 @@ const Sidebar: React.FC<SidebarProps> = ({ setTaskName, setJobName, isOpen, onTo
     if (!isOpen) {
       setShowTaskSubMenu(false);
       setShowJobSubMenu(false);
+      setShowLeadSubMenu(false); // ✅ add this
     }
   }, [isOpen]);
 
@@ -540,6 +572,7 @@ const Sidebar: React.FC<SidebarProps> = ({ setTaskName, setJobName, isOpen, onTo
             {filteredNavItems.map(item => {
               const isTasksActive = location.pathname.startsWith("/tasks");
               const isJobPortalActive = location.pathname.startsWith("/jobs");
+              const isLeadPortalActive = location.pathname.startsWith("/leads");
               const isThisActive = location.pathname === item.path;
 
               const renderItem = (itemLabel: string) => (
@@ -549,7 +582,8 @@ const Sidebar: React.FC<SidebarProps> = ({ setTaskName, setJobName, isOpen, onTo
                   className={cn(
                     "sidebar-item flex items-center justify-between p-2",
                     (itemLabel === "Tasks" && isTasksActive) ||
-                      (itemLabel === "Job-Portal" && isJobPortalActive) || isThisActive
+                      (itemLabel === "Job-Portal" && isJobPortalActive)
+                      || (itemLabel === "Lead-Portal" && isLeadPortalActive) || isThisActive
                       ? "bg-blue-600 text-white font-semibold"
                       : "",
                     !isOpen && "justify-center"
@@ -561,12 +595,13 @@ const Sidebar: React.FC<SidebarProps> = ({ setTaskName, setJobName, isOpen, onTo
                   </div>
 
                   {/* Arrow only for Tasks & Job-Portal */}
-                  {isOpen && (item.label === "Tasks" || item.label === "Job-Portal") && (
+                  {isOpen && (item.label === "Tasks" || item.label === "Job-Portal" || item.label === "Lead-Portal") && (
                     <ChevronRight
                       className={cn(
                         "w-4 h-4 transition-transform duration-200",
                         item.label === "Tasks" && showTaskSubMenu && "rotate-90",
-                        item.label === "Job-Portal" && showJobSubMenu && "rotate-90"
+                        item.label === "Job-Portal" && showJobSubMenu && "rotate-90",
+                        item.label === "Lead-Portal" && showLeadSubMenu && "rotate-90"
                       )}
                     />
                   )}
@@ -658,6 +693,49 @@ const Sidebar: React.FC<SidebarProps> = ({ setTaskName, setJobName, isOpen, onTo
                   </li>
                 );
               }
+
+              if (item.label === "Lead-Portal") {
+                return (
+                  <li
+                    key={item.path}
+                    className="relative"
+                    onMouseEnter={e => isOpen && handleLeadMouseEnter(e)}
+                    onMouseLeave={handleLeadMouseLeave}
+                  >
+                    {renderItem(item.label)}
+
+                    {isOpen && showLeadSubMenu && createPortal(
+                      <div
+                        ref={leadDropdownRef}
+                        style={{ top: leadDropdownPos.top, left: leadDropdownPos.left }}
+                        className="fixed w-48 bg-sidebar shadow-lg border border-sidebar-border z-50"
+                        onMouseEnter={() => setShowLeadSubMenu(true)}
+                        onMouseLeave={handleLeadMouseLeave}
+                      >
+                        <ul>
+                          {LeadSubMenu.map(sub => (
+                            <li key={sub.path}>
+                              <NavLink
+                                to={sub.path}
+                                end={sub.path === "/leads"} // only for dashboard
+                                onClick={() => { setLeadSubPage(sub?.label); setLeadName("Lead-Portal"); }}
+                                className={({ isActive }) => cn(
+                                  "block px-4 py-2 text-sm text-white hover:bg-sidebar-accent",
+                                  isActive && "bg-sidebar-accent font-medium"
+                                )}
+                              >
+                                {sub.label}
+                              </NavLink>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>,
+                      document.body
+                    )}
+                  </li>
+                );
+              }
+
 
               return <li key={item.path}>{renderItem(item.label)}</li>;
             })}

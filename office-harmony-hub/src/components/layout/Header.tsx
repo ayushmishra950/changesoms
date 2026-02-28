@@ -25,9 +25,11 @@ interface HeaderProps {
   taskName: string;
   jobName: string;
   jobSubPage: string;
+  leadName: string;
+  leadSubPage: string;
 }
 
-const Header: React.FC<HeaderProps> = ({ taskName, activeSidebar, taskSubPage, jobName, jobSubPage }) => {
+const Header: React.FC<HeaderProps> = ({ taskName, activeSidebar, taskSubPage, jobName, jobSubPage, leadName, leadSubPage }) => {
   const { user, logout } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();

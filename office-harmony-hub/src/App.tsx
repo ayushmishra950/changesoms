@@ -36,7 +36,11 @@ import JobsPage from "./job-portal/JobsPage";
 import RevenuePage from "./job-portal/RevenuePage";
 import SettingsPage from "./job-portal/SettingsPage";
 import RolePage from "./job-portal/RolePage";
-
+// lead management 
+import LeadLayout from "@/lead-management/LeadLayout";
+import OrderList from "@/lead-management/OrderList";
+import LeadList from "@/lead-management/LeadList";
+import ProductList from "@/lead-management/ProductList";
 // global.d.ts
 export { };
 
@@ -113,6 +117,11 @@ const AppRoutes = () => {
           <Route path="roles" element={<RolePage />} />
         </Route>
 
+        <Route path="/leads" element={<LeadLayout />}>
+          <Route index element={<LeadList />} />
+          <Route path="orders" element={<OrderList />} />
+          <Route path="products" element={<ProductList />} />
+        </Route>
       </Route>
 
 

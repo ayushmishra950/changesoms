@@ -1,291 +1,366 @@
-import React, { useState } from "react";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardFooter,
-} from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import React, { useEffect, useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter} from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetFooter,
-} from "@/components/ui/sheet";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  Search,
-  Filter,
-  MoreHorizontal,
-  Briefcase,
-  MapPin,
-  Clock,
-  DollarSign,
-  Users,
-  Plus,
-  LayoutList,
-  LayoutGrid,
-  Eye,
-  Edit,
-} from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetFooter} from "@/components/ui/sheet";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger} from "@/components/ui/dropdown-menu";
+import { Search, MoreHorizontal, Briefcase, MapPin, Clock, DollarSign, Users, Plus, Edit, IndianRupee} from "lucide-react";
 import { Helmet } from "react-helmet-async";
+import AddJobDialog from "./forms/JobDialog";
+import {getAllJob, JobStatusChange, applicationStatusChange, JobPublished} from "@/services/Service";
+import {formatDate, getStatusBadgeClassAndText, statusActions} from "@/services/allFunctions";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
+import { useLocation, useNavigate } from "react-router-dom";
+import AddApplicationForm from "@/job-portal/forms/ApplicationDialog";
+import { useAppDispatch, useAppSelector } from "@/redux-toolkit/hooks/hook";
+import { getJobList } from "@/redux-toolkit/slice/job-portal/jobSlice";
 
-// Mock Data
-const jobsData = [
-  {
-    id: 1,
-    title: "Senior React Developer",
-    company: "TechNova",
-    location: "San Francisco, CA (Remote)",
-    type: "Full-time",
-    salary: "$120k - $150k",
-    postedDate: "2024-03-01",
-    status: "Active",
-    applicants: 45,
-    views: 1200,
-    hires: 2,
-    description: "We are looking for an experienced React developer to join our team...",
-    requirements: ["5+ years of experience", "React, TypeScript, Node.js", "Strong communication skills"],
-  },
-  {
-    id: 2,
-    title: "Product Designer",
-    company: "GreenFields",
-    location: "Austin, TX (On-site)",
-    type: "Contract",
-    salary: "$90k - $110k",
-    postedDate: "2024-03-05",
-    status: "Active",
-    applicants: 28,
-    views: 850,
-    hires: 0,
-    description: "Design intuitive user experiences for our agricultural tech products...",
-    requirements: ["Figma proficiency", "User research experience", "Portfolio required"],
-  },
-  {
-    id: 3,
-    title: "Marketing Manager",
-    company: "MediCare Plus",
-    location: "New York, NY (Hybrid)",
-    type: "Full-time",
-    salary: "$100k - $130k",
-    postedDate: "2024-02-20",
-    status: "Closed",
-    applicants: 112,
-    views: 3500,
-    hires: 1,
-    description: "Lead our marketing initiatives and brand strategy...",
-    requirements: ["Marketing degree", "SEO/SEM knowledge", "Team leadership"],
-  },
-  {
-    id: 4,
-    title: "DevOps Engineer",
-    company: "FinServe",
-    location: "London, UK (Remote)",
-    type: "Full-time",
-    salary: "$110k - $140k",
-    postedDate: "2024-03-10",
-    status: "Active",
-    applicants: 15,
-    views: 400,
-    hires: 0,
-    description: "Build and maintain our CI/CD pipelines and cloud infrastructure...",
-    requirements: ["AWS/Azure", "Docker & Kubernetes", "Scripting skills"],
-  },
-  {
-    id: 5,
-    title: "Customer Support Specialist",
-    company: "EduLearn",
-    location: "Remote",
-    type: "Part-time",
-    salary: "$25/hr",
-    postedDate: "2024-03-12",
-    status: "Draft",
-    applicants: 0,
-    views: 0,
-    hires: 0,
-    description: "Assist students and teachers on our online learning platform...",
-    requirements: ["Excellent written English", "Patience and empathy", "Tech-savvy"],
-  },
-];
 
 const JobsPage: React.FC = () => {
-  const [viewMode, setViewMode] = useState<"list" | "grid">("list");
+  const {user} = useAuth();
+  const {toast} = useToast();
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState("All");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [activeFilter, setActiveFilter] = useState("active");
   const [selectedJob, setSelectedJob] = useState<any>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [formOpen, setFormOpen] = useState(false);
+  const [initialData, setInitialData] = useState(null);
+  // const [jobList, setJobList] = useState([]);
+  const [jobListRefresh, setJobListRefresh] = useState(false);
+    const [showApplicants, setShowApplicants] = useState(false);
+    const [isCandidateFormOpen, setIsCandidateFormOpen] = useState(false);
+      const [applicationListRefresh, setApplicationListRefresh] = useState(false);
+      const [jobId,setJobId] = useState(null);
+    
+  const location = useLocation();
+  const navigate  = useNavigate();
+  const dispatch = useAppDispatch();
+  const jobList = useAppSelector((state)=> state?.job?.jobList);
 
-  // Filter Logic
-  const filteredJobs = jobsData.filter((job) => {
-    const matchesSearch =
-      job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      job.company.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === "All" || job.status === statusFilter;
+const companyId = location?.state?.companyId;
+const companyName = location?.state?.companyName;
 
-    return matchesSearch && matchesStatus;
-  });
+// Filter Logic with Job Title, Skills, Company Name & CompanyId
+const filteredJobs = jobList?.filter((job) => {
+  const lowerQuery = searchQuery.toLowerCase();
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "Active":
-        return <Badge className="bg-green-100 text-green-700 hover:bg-green-200 border-none">Active</Badge>;
-      case "Closed":
-        return <Badge className="bg-gray-100 text-gray-700 hover:bg-gray-200 border-none">Closed</Badge>;
-      case "Draft":
-        return <Badge className="bg-yellow-100 text-yellow-700 hover:bg-yellow-200 border-none">Draft</Badge>;
-      default:
-        return <Badge variant="secondary">{status}</Badge>;
-    }
+  // Match Job Title
+  const matchesTitle = job.jobTitle?.toLowerCase().includes(lowerQuery);
+
+  // Match Skills
+  const matchesSkill = job.skills?.some((skill) =>
+    skill.toLowerCase().includes(lowerQuery)
+  );
+
+  // Match Company Name
+  const matchesCompany = job?.companyJobId?.name
+    ?.toLowerCase()
+    .includes(lowerQuery);
+
+  // Status filter
+  const matchesStatus =
+    statusFilter === "all" ||
+    job.status === statusFilter ||
+    job.activeStatus === statusFilter;
+
+  // Active/Inactive toggle
+  const matchActiveStatus =
+    !activeFilter ||
+    activeFilter === "all" ||
+    activeFilter === job?.activeStatus;
+
+  // ✅ CompanyId condition
+  const matchesCompanyId =
+    !companyId || job?.companyJobId?._id === companyId;
+const matchesLocationType = job?.locationType?.toLowerCase().includes(lowerQuery || '');
+  // Final return
+  return (
+    (matchesTitle || matchesSkill || matchesCompany || matchesLocationType) &&
+    matchesStatus &&
+    matchActiveStatus &&
+    matchesCompanyId 
+  );
+});
+const updateApplicantStatus = async (e, applicationId, newStatus) => {
+  e.stopPropagation();
+
+  const payload = {
+    applicationId,
+    status: newStatus,
   };
+  try {
+    const response = await applicationStatusChange(payload);
+    if (response.status === 200) {
+      setSelectedJob((prev) => ({
+        ...prev,
+        applications: prev.applications.map((app) =>
+          app._id === applicationId
+            ? { ...app, status: newStatus }
+            : app
+        ),
+      }));
+
+      toast({
+        title: "Candidate status updated successfully",
+        description: response?.data?.message,
+      });
+    }
+  } catch (error) {
+    console.error("Error updating candidate status:", error);
+
+    toast({
+      title: "Error updating candidate status",
+      description:
+        error?.response?.data?.message || error?.message,
+      variant: "destructive",
+    });
+  }
+};
+
+
+  const handleStatusChange = async(id, status)=> {
+    try{
+        const res = await JobStatusChange(id, status);
+        if(res.status===200){
+          toast({title:"Status Updated.", description:res.data?.message});
+          setJobListRefresh(true);
+        }
+    }
+    catch(err){
+      console.log(err);
+      toast({title:"Error Status Update", description:err?.response?.data?.message, variant:"destructive"})
+    }
+  }
+
+  
+  const handleAddPublishJob = async(id)=> {
+    try{
+        const res = await JobPublished(id);
+        if(res.status===200){
+          toast({title:"Status Updated.", description:res.data?.message});
+          setJobListRefresh(true);
+        }
+    }
+    catch(err){
+      console.log(err);
+      toast({title:"Error Status Update", description:err?.response?.data?.message, variant:"destructive"})
+    }
+  }
+
+  const handleGetJobs = async() =>{
+    try{
+      const res = await getAllJob();
+      console.log(res)
+      if(res.status===200){
+      // setJobList(res.data?.jobs);
+      dispatch(getJobList(res?.data?.jobs));
+      setJobListRefresh(false);
+      }
+    }
+    catch(err){
+      console.log(err);
+    }
+  }
+
+  useEffect(()=>{
+    if(jobList?.length===0||jobListRefresh){
+ handleGetJobs()
+    }
+   
+  },[jobListRefresh, jobList?.length])
+  
+const getStatusBadge = (
+  status: string,
+  activeStatus: string
+) => {
+  // Draft always highest priority
+  if (status === "draft") {
+    return (
+      <Badge className="bg-yellow-100 text-yellow-700 hover:bg-yellow-200 border-none">
+        Draft
+      </Badge>
+    );
+  }
+  
+  // Published & Active
+  if (status === "published" && activeStatus === "active") {
+    return (
+      <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-200 border-none">
+        Publish
+      </Badge>
+    );
+  }
+
+  // Published but Closed
+  if (status === "published" && activeStatus === "inactive") {
+    return (
+      <Badge className="bg-gray-100 text-gray-700 hover:bg-gray-200 border-none">
+        publish
+      </Badge>
+    );
+  }
+
+  return <Badge variant="secondary">Unknown</Badge>;
+};
 
   const openJobDetails = (job: any) => {
     setSelectedJob(job);
     setIsDetailsOpen(true);
   };
+  console.log(selectedJob)
 
   return (
     <>
+      <AddJobDialog
+        isOpen={formOpen}
+        isOpenChange={setFormOpen}
+        initialData={initialData}
+        setJobListRefresh={setJobListRefresh}
+        companyId={null}
+      />
+
+       <AddApplicationForm
+        isOpen={isCandidateFormOpen}
+        onOpenChange={() => { setIsCandidateFormOpen(false) }}
+        initialData={initialData}
+        setApplicationListRefresh={setApplicationListRefresh}
+        jobId={jobId}
+      />
+
       <Helmet>
         <title>Jobs | Job Portal</title>
       </Helmet>
 
-      <div className="flex flex-col min-h-screen bg-gray-50/40 p-6 space-y-6">
+      <div className="flex flex-col min-h-screen bg-gray-50/40 p-6 space-y-6 mt-[-40px]">
 
         {/* Page Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight text-gray-900">Job Listings</h1>
-            <p className="text-muted-foreground mt-1">
-              Create and manage job posts, track candidates, and view metrics.
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="flex items-center bg-white p-1 rounded-lg border shadow-sm mr-2">
-              <Button
-                variant={viewMode === 'list' ? 'secondary' : 'ghost'}
-                size="sm"
-                onClick={() => setViewMode('list')}
-                className="gap-2"
-              >
-                <LayoutList className="h-4 w-4" /> List
-              </Button>
-              <Button
-                variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
-                size="sm"
-                onClick={() => setViewMode('grid')}
-                className="gap-2"
-              >
-                <LayoutGrid className="h-4 w-4" /> Cards
-              </Button>
-            </div>
-            <Button className="gap-2 bg-blue-600 hover:bg-blue-700" onClick={() => setIsCreateOpen(true)}>
-              <Plus className="h-4 w-4" /> Post New Job
-            </Button>
-          </div>
-        </div>
+      <div className="flex justify-between items-center gap-4">
+  
+  {/* Left Side Heading */}
+  <div>
+    <h1 className="inline-block bg-white px-4 py-2 font-bold text-lg rounded-md shadow-sm">
+      {companyId ? `${companyName} Company / Jobs` : "All Company Jobs"}
+    </h1>
+  </div>
 
+  {/* Right Side Button */}
+  <Button
+    className="gap-2 bg-blue-600 hover:bg-blue-700"
+    onClick={() => {
+      setInitialData(null);
+      setFormOpen(true);
+    }}
+  >
+    <Plus className="h-4 w-4" />
+    Post New Job
+  </Button>
+
+</div>
         {/* Filters */}
-        <Card className="shadow-sm">
-          <CardContent className="p-4 flex flex-col md:flex-row gap-4 items-center justify-between">
-            <div className="relative w-full md:w-1/3">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                type="search"
-                placeholder="Search jobs..."
-                className="pl-9"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-            <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full sm:w-[200px]">
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="All">All Statuses</SelectItem>
-                  <SelectItem value="Active">Active</SelectItem>
-                  <SelectItem value="Closed">Closed</SelectItem>
-                  <SelectItem value="Draft">Draft</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </CardContent>
-        </Card>
+    <Card className="shadow-sm">
+  <CardContent className="p-4 flex flex-col md:flex-row gap-4 items-center justify-between">
+    
+    {/* Search + Toggle Wrapper */}
+    <div className="flex w-full md:w-1/2 gap-2 items-center">
 
+      {/* Search Input */}
+      <div className="relative flex-1">
+        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+        <Input
+          type="search"
+          placeholder="Search jobs..."
+          className="pl-9 w-full"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
+      </div>
+
+      {/* Toggle Button */}
+      <div className="flex border rounded-md overflow-hidden">
+        <button
+          onClick={() => setActiveFilter("active")}
+          className={`px-3 py-2 text-sm transition ${
+            activeFilter === "active"
+              ? "bg-blue-500 text-white"
+              : "bg-white text-gray-600"
+          }`}
+        >
+          Active
+        </button>
+        <button
+          onClick={() => setActiveFilter("inactive")}
+          className={`px-3 py-2 text-sm transition ${
+            activeFilter === "inactive"
+              ? "bg-gray-500 text-white"
+              : "bg-white text-gray-600"
+          }`}
+        >
+          Inactive
+        </button>
+      </div>
+
+    </div>
+
+    {/* Status Filter Dropdown */}
+    <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+      <Select value={statusFilter} onValueChange={setStatusFilter}>
+        <SelectTrigger className="w-full sm:w-[200px]">
+          <SelectValue placeholder="Status" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All Statuses</SelectItem>
+          <SelectItem value="draft">Draft</SelectItem>
+          <SelectItem value="published">Publish</SelectItem>
+        </SelectContent>
+      </Select>
+    </div>
+
+  </CardContent>
+</Card>
         {/* Content Area */}
-        {viewMode === 'list' ? (
+
           <Card className="shadow-sm">
             <CardContent className="p-0">
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Job Title</TableHead>
+                    <TableHead>Location Type</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Posted Date</TableHead>
                     <TableHead>Applications</TableHead>
-                    <TableHead>Views</TableHead>
                     <TableHead>Hired</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredJobs.map((job) => (
-                    <TableRow key={job.id} className="cursor-pointer hover:bg-muted/50" onClick={() => openJobDetails(job)}>
+                  {filteredJobs?.length> 0 ?(
+                  filteredJobs?.map((job) => (
+                    <TableRow key={job._id} className="cursor-pointer hover:bg-muted/50" onClick={() => openJobDetails(job)}>
                       <TableCell>
                         <div>
-                          <div className="font-medium">{job.title}</div>
-                          <div className="text-xs text-muted-foreground">{job.company} • {job.location}</div>
+                          <div className="font-medium">{job.jobTitle}</div>
+                          <div className="text-xs text-muted-foreground">{job.companyJobId?.name?.charAt(0).toUpperCase() + job?.companyJobId?.name?.slice(1)}</div>
                         </div>
                       </TableCell>
-                      <TableCell>{getStatusBadge(job.status)}</TableCell>
-                      <TableCell>{job.postedDate}</TableCell>
+                        <TableCell>{job.locationType?.charAt(0).toUpperCase() + job?.locationType.slice(1)}</TableCell>
+                      <TableCell>{getStatusBadge(job.status, job.activeStatus)}</TableCell>
+                      <TableCell>{Boolean(job.postedDate)?formatDate(job?.postedDate):"No Posted"}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1 font-medium">
                           <Users className="h-4 w-4 text-muted-foreground" />
-                          {job.applicants}
+                          {job.applications?.length}
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-1 text-muted-foreground">
-                          <Eye className="h-4 w-4" />
-                          {job.views}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="secondary" className="rounded-full px-2">{job.hires}</Badge>
+                        <Badge variant="secondary" className="rounded-full px-2">{job.applications?.filter((v)=> v?.status==="selected")?.length}</Badge>
                       </TableCell>
                       <TableCell className="text-right">
                         <DropdownMenu>
@@ -296,68 +371,25 @@ const JobsPage: React.FC = () => {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); openJobDetails(job) }}>View Details</DropdownMenuItem>
-                            <DropdownMenuItem onClick={(e) => e.stopPropagation()}>Edit Job</DropdownMenuItem>
-                            <DropdownMenuItem onClick={(e) => e.stopPropagation()}>Close Job</DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem className="text-red-600" onClick={(e) => e.stopPropagation()}>Delete</DropdownMenuItem>
+                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); openJobDetails(job) }} className="cursor-pointer">View Details</DropdownMenuItem>
+                            <DropdownMenuItem onClick={(e) => { e.stopPropagation();setJobId(job?._id); setIsCandidateFormOpen(true) }} className="cursor-pointer">Add Application</DropdownMenuItem>
+                            <DropdownMenuItem  onClick={(e) => {e.stopPropagation(); setInitialData(job); setFormOpen(true) }} className="cursor-pointer">Edit Job</DropdownMenuItem>
+                            {job?.status==="draft" && <DropdownMenuItem  onClick={(e) => {e.stopPropagation();handleAddPublishJob(job?._id) }} className="cursor-pointer">Publish Job</DropdownMenuItem>}
+                          {job?.activeStatus==="active" && job?.status==="published" && <DropdownMenuItem onClick={(e) =>{ e.stopPropagation();handleStatusChange(job?._id, "inactive")}} className="cursor-pointer">Close Job</DropdownMenuItem>}
+                          {job?.activeStatus==="inactive" && <DropdownMenuItem onClick={(e) => {e.stopPropagation(); handleStatusChange(job?._id, "active")}} className="cursor-pointer text-green-500">Make a Activate</DropdownMenuItem>}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>
                     </TableRow>
-                  ))}
+                  ))):
+                  <TableRow>
+                  <TableCell colSpan={7} className="text-center py-4 text-muted-foreground">No Job Found.</TableCell>
+                  </TableRow>
+                  }
                 </TableBody>
               </Table>
             </CardContent>
           </Card>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredJobs.map((job) => (
-              <Card key={job.id} className="hover:shadow-md transition-shadow cursor-pointer flex flex-col" onClick={() => openJobDetails(job)}>
-                <CardHeader className="pb-2">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <CardTitle className="text-lg">{job.title}</CardTitle>
-                      <CardDescription className="mt-1">{job.company}</CardDescription>
-                    </div>
-                    {getStatusBadge(job.status)}
-                  </div>
-                </CardHeader>
-                <CardContent className="flex-1 pb-4">
-                  <div className="space-y-2 text-sm text-muted-foreground">
-                    <div className="flex items-center gap-2">
-                      <MapPin className="h-4 w-4" /> {job.location}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Briefcase className="h-4 w-4" /> {job.type}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <DollarSign className="h-4 w-4" /> {job.salary}
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between mt-6 pt-4 border-t">
-                    <div className="text-center">
-                      <p className="text-xl font-bold text-gray-900">{job.applicants}</p>
-                      <p className="text-xs text-muted-foreground">Applicants</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-xl font-bold text-gray-900">{job.views}</p>
-                      <p className="text-xs text-muted-foreground">Views</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-xl font-bold text-gray-900">{job.hires}</p>
-                      <p className="text-xs text-muted-foreground">Hired</p>
-                    </div>
-                  </div>
-                </CardContent>
-                <CardFooter className="pt-0 justify-end">
-                  <Button variant="outline" size="sm">Manage</Button>
-                </CardFooter>
-              </Card>
-            ))}
-          </div>
-        )}
       </div>
 
       {/* Job Details Sheet */}
@@ -368,36 +400,30 @@ const JobsPage: React.FC = () => {
               <SheetHeader>
                 <div className="flex items-start justify-between">
                   <div>
-                    <SheetTitle className="text-2xl">{selectedJob.title}</SheetTitle>
-                    <SheetDescription className="text-lg">{selectedJob.company}</SheetDescription>
+                    <SheetTitle className="text-2xl">{selectedJob.jobTitle}</SheetTitle>
+                    <SheetDescription className="text-lg">{selectedJob.companyJobId?.name}</SheetDescription>
                   </div>
-                  {getStatusBadge(selectedJob.status)}
+                 {getStatusBadge(selectedJob.status, selectedJob.activeStatus)}
                 </div>
               </SheetHeader>
 
               <div className="flex flex-wrap gap-4 text-sm text-muted-foreground border-b pb-4">
-                <div className="flex items-center gap-2"><MapPin className="h-4 w-4" /> {selectedJob.location}</div>
-                <div className="flex items-center gap-2"><Briefcase className="h-4 w-4" /> {selectedJob.type}</div>
-                <div className="flex items-center gap-2"><DollarSign className="h-4 w-4" /> {selectedJob.salary}</div>
-                <div className="flex items-center gap-2"><Clock className="h-4 w-4" /> Posted {selectedJob.postedDate}</div>
+                <div className="flex items-center gap-2"><MapPin className="h-4 w-4" /> {selectedJob?.locationType.charAt(0).toUpperCase() + selectedJob?.locationType?.slice(1)}</div>
+                <div className="flex items-center gap-2"><Briefcase className="h-4 w-4" /> {selectedJob?.type}</div>
+                <div className="flex items-center gap-2"><IndianRupee className="h-4 w-4" /> {selectedJob?.salary?.min} - {selectedJob?.salary?.max}</div>
+                <div className="flex items-center gap-2"><Clock className="h-4 w-4" /> Posted:- {Boolean(selectedJob.postedDate)?formatDate(selectedJob?.postedDate):"No Posted"}</div>
               </div>
 
               <div className="grid grid-cols-3 gap-4">
                 <Card className="bg-blue-50 border-blue-100">
                   <CardContent className="p-4 text-center">
-                    <p className="text-2xl font-bold text-blue-700">{selectedJob.applicants}</p>
+                    <p className="text-2xl font-bold text-blue-700">{selectedJob?.applications?.length}</p>
                     <p className="text-xs text-blue-600 font-medium uppercase">Applicants</p>
-                  </CardContent>
-                </Card>
-                <Card className="bg-purple-50 border-purple-100">
-                  <CardContent className="p-4 text-center">
-                    <p className="text-2xl font-bold text-purple-700">{selectedJob.views}</p>
-                    <p className="text-xs text-purple-600 font-medium uppercase">Views</p>
                   </CardContent>
                 </Card>
                 <Card className="bg-green-50 border-green-100">
                   <CardContent className="p-4 text-center">
-                    <p className="text-2xl font-bold text-green-700">{selectedJob.hires}</p>
+                    <p className="text-2xl font-bold text-green-700">{selectedJob?.applications?.filter((v)=> v?.status==="selected")?.length}</p>
                     <p className="text-xs text-green-600 font-medium uppercase">Hired</p>
                   </CardContent>
                 </Card>
@@ -409,15 +435,23 @@ const JobsPage: React.FC = () => {
 
                 <h3 className="text-lg font-semibold">Requirements</h3>
                 <ul className="list-disc pl-5 space-y-1 text-sm text-gray-700">
-                  {selectedJob.requirements.map((req: string, i: number) => (
+                  {selectedJob?.skills?.map((req: string, i: number) => (
                     <li key={i}>{req}</li>
                   ))}
                 </ul>
+
+                   <h3 className="text-lg font-semibold">Experience</h3>
+                <p className="text-gray-700 text-sm leading-relaxed">{selectedJob?.experience?.min} - {selectedJob?.experience?.max} Year</p>
+
+               <h3 className="text-lg font-semibold">Type</h3>
+                <p className="text-gray-700 text-sm leading-relaxed">{selectedJob?.employmentType}</p>
+
+
               </div>
 
               <div className="flex justify-end gap-3 pt-6 border-t">
-                <Button variant="outline"><Edit className="h-4 w-4 mr-2" />Edit Job</Button>
-                <Button className="bg-blue-600 hover:bg-blue-700">View Applications</Button>
+                <Button variant="outline" onClick={() => { setInitialData(selectedJob); setFormOpen(true) }}><Edit className="h-4 w-4 mr-2" />Edit Job</Button>
+                <Button className="bg-blue-600 hover:bg-blue-700" onClick={()=>{navigate("/jobs/application",{state:{jobId:selectedJob?._id, jobName:selectedJob?.jobTitle}})}}>View Applications</Button>
               </div>
             </div>
           )}
@@ -425,60 +459,235 @@ const JobsPage: React.FC = () => {
       </Sheet>
 
       {/* Create Job Sheet (Simplified) */}
-      <Sheet open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-        <SheetContent className="sm:max-w-xl overflow-y-auto">
-          <SheetHeader>
-            <SheetTitle>Post a New Job</SheetTitle>
-            <SheetDescription>Fill in the details to publish a new job opening.</SheetDescription>
-          </SheetHeader>
-          <div className="py-6 space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Job Title</label>
-              <Input placeholder="e.g. Senior Frontend Engineer" />
+    <Sheet open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
+  <SheetContent className="sm:max-w-2xl overflow-y-auto">
+    {selectedJob && (
+      <div className="space-y-6">
+
+        {/* ================= HEADER ================= */}
+        <SheetHeader>
+          <div className="flex items-start justify-between">
+            <div>
+              <SheetTitle className="text-2xl">
+                {selectedJob.jobTitle}
+              </SheetTitle>
+              <SheetDescription className="text-lg">
+                {selectedJob.companyJobId?.name}
+              </SheetDescription>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Company</label>
-                <Select>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select Company" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="TechNova">TechNova</SelectItem>
-                    <SelectItem value="GreenFields">GreenFields</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Employment Type</label>
-                <Select>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select Type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="full-time">Full-time</SelectItem>
-                    <SelectItem value="contract">Part-time</SelectItem>
-                    <SelectItem value="contract">Contract</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Location</label>
-              <Input placeholder="e.g. Remote, San Fransisco, CA" />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Description</label>
-              <Textarea placeholder="Describe the role and responsibilities..." className="min-h-[150px]" />
-            </div>
+            {getStatusBadge(selectedJob.status, selectedJob.activeStatus)}
           </div>
-          <SheetFooter>
-            <Button variant="outline" onClick={() => setIsCreateOpen(false)}>Cancel</Button>
-            <Button className="bg-blue-600 hover:bg-blue-700">Draft Post</Button>
-            <Button className="bg-green-600 hover:bg-green-700">Publish Now</Button>
-          </SheetFooter>
-        </SheetContent>
-      </Sheet>
+        </SheetHeader>
+
+        {/* ================= BASIC INFO ================= */}
+        <div className="flex flex-wrap gap-4 text-sm text-muted-foreground border-b pb-4">
+          <div className="flex items-center gap-2">
+            <MapPin className="h-4 w-4" />
+            {selectedJob?.locationType?.charAt(0).toUpperCase() +
+              selectedJob?.locationType?.slice(1)}
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Briefcase className="h-4 w-4" />
+            {selectedJob?.employmentType}
+          </div>
+
+          <div className="flex items-center gap-2">
+            <IndianRupee className="h-4 w-4" />
+            {selectedJob?.salary?.min} - {selectedJob?.salary?.max}
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Clock className="h-4 w-4" />
+            Posted:{" "}
+            {Boolean(selectedJob.postedDate)
+              ? formatDate(selectedJob?.postedDate)
+              : "Not Posted"}
+          </div>
+        </div>
+
+        {/* ================= REQUIREMENTS / EXPERIENCE / TYPE ================= */}
+        <div className="grid grid-cols-3 gap-4">
+
+          <Card>
+            <CardContent className="p-4 text-center ">
+              <p className="text-sm text-muted-foreground">Requirements</p>
+              <div className="flex flex-wrap justify-center gap-1 mt-2 max-h-[150px] overflow-y-auto">
+                {selectedJob?.skills?.map((skill: string, i: number) => (
+                  <Badge key={i} variant="secondary" className="text-xs">
+                    {skill}
+                  </Badge>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4 text-center">
+              <p className="text-sm text-muted-foreground">Experience</p>
+              <p className="font-semibold mt-2">
+                {selectedJob?.experience?.min} -{" "}
+                {selectedJob?.experience?.max} Years
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4 text-center">
+              <p className="text-sm text-muted-foreground">Type</p>
+              <p className="font-semibold mt-2">
+                {selectedJob?.employmentType}
+              </p>
+            </CardContent>
+          </Card>
+
+        </div>
+
+        {/* ================= DESCRIPTION ================= */}
+        <div>
+          <h3 className="text-lg font-semibold mb-2">Description</h3>
+          <p className="text-gray-700 text-sm leading-relaxed">
+            {selectedJob?.description}
+          </p>
+        </div>
+
+        {/* ================= APPLICATION COUNT BOX ================= */}
+        <div
+          onClick={() => setShowApplicants(!showApplicants)}
+          className="cursor-pointer border rounded-xl p-4 bg-gray-50 hover:bg-gray-100 transition"
+        >
+          <div className="flex justify-between items-center">
+            <h3 className="font-semibold text-lg">Total Applications</h3>
+            <Badge className="text-sm px-3 py-1">
+              {selectedJob?.applications?.length || 0}
+            </Badge>
+          </div>
+        </div>
+
+        {/* ================= APPLICANT LIST ================= */}
+        {showApplicants && (
+          <div className="max-h-[250px] overflow-y-auto space-y-4 mt-2">
+            {selectedJob?.applications?.map((app) => (
+              <div
+                key={app._id}
+                className="border rounded-xl p-4 flex justify-between items-start"
+              >
+                {/* Left Side */}
+                <div className="flex items-start gap-4">
+                  <Avatar className="h-12 w-12">
+                    <AvatarImage src={app?.applicant?.profileImage} />
+                    <AvatarFallback>
+                      {app?.applicant?.name?.substring(0, 2).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+
+                  <div>
+                    <h4 className="font-semibold">
+                      {app?.applicant?.name}
+                    </h4>
+
+                    <div className="flex gap-2 mt-1 flex-wrap">
+                      {app?.applicant?.skills?.map((skill: string) => (
+                        <Badge
+                          key={skill}
+                          variant="outline"
+                          className="text-xs px-2 py-1"
+                        >
+                          {skill}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Side */}
+                <div className="flex items-center gap-2">
+                  <Badge
+                    className={
+                      getStatusBadgeClassAndText(app?.status)?.className
+                    }
+                  >
+                    {getStatusBadgeClassAndText(app?.status)?.text}
+                  </Badge>
+
+                  {statusActions[app?.status]?.length > 0 && (
+                    <div className="flex gap-1">
+                      {statusActions[app?.status].map((action) => {
+                        let btnClass = "text-xs px-2 py-1";
+                        let btnVariant: "default" | "outline" = "default";
+                        let btnLabel = action;
+
+                        if (action === "interview") {
+                          btnClass +=
+                            " bg-blue-600 hover:bg-blue-700 text-white";
+                        } else if (action === "selected") {
+                          btnClass +=
+                            " border-green-600 text-green-600 hover:bg-green-50";
+                          btnVariant = "outline";
+                          btnLabel = "Hire";
+                        } else if (action === "rejected") {
+                          btnClass +=
+                            " border-red-600 text-red-600 hover:bg-red-50";
+                          btnVariant = "outline";
+                          btnLabel = "Reject";
+                        }
+
+                        return (
+                          <Button
+                            key={action}
+                            className={btnClass}
+                            variant={btnVariant}
+                            size="sm"
+                            onClick={(e) =>
+                              updateApplicantStatus(e, app._id, action)
+                            }
+                          >
+                            {btnLabel === "screening"
+                              ? "In Review"
+                              : btnLabel}
+                          </Button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* ================= FOOTER ACTIONS ================= */}
+        <div className="flex justify-end gap-3 pt-6 border-t">
+          <Button
+            variant="outline"
+            onClick={() => {
+              setInitialData(selectedJob);
+              setFormOpen(true);
+            }}
+          >
+            <Edit className="h-4 w-4 mr-2" />
+            Edit Job
+          </Button>
+
+          <Button
+            className="bg-blue-600 hover:bg-blue-700"
+            onClick={() =>
+              navigate("/jobs/application", {
+                state: {
+                  jobId: selectedJob?._id,
+                  jobName: selectedJob?.jobTitle,
+                },
+              })
+            }
+          >
+            View Applications
+          </Button>
+        </div>
+
+      </div>
+    )}
+  </SheetContent>
+</Sheet>
     </>
   );
 };
